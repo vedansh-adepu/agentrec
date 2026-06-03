@@ -7,6 +7,7 @@ from typing import Any
 
 import typer
 
+from agentrec.diff import diff_cassettes
 from agentrec.errors import CassetteError, ReplayMissError
 from agentrec.examples import record_math_flow, replay_math_flow
 from agentrec.models import RunRecord, Step
@@ -67,6 +68,36 @@ def show(
     typer.echo("steps:")
     for step in steps:
         _print_step(step)
+
+
+@app.command()
+def diff(
+    left: Path = typer.Option(..., "--left", help="Left cassette path."),
+    right: Path = typer.Option(..., "--right", help="Right cassette path."),
+) -> None:
+    """Diff two cassette runs."""
+
+    try:
+        summary = diff_cassettes(left, right)
+    except CassetteError as exc:
+        typer.secho(f"Cassette error: {exc}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from exc
+    except ValueError as exc:
+        typer.secho(f"Cassette error: malformed cassette: {exc}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from exc
+
+    typer.echo("Cassette diff.")
+    for key in (
+        "left_run_id",
+        "right_run_id",
+        "final_output_changed",
+        "step_count_changed",
+        "step_sequence_changed",
+        "latency_delta_ms",
+        "cost_delta_usd",
+        "changed",
+    ):
+        typer.echo(f"{key}: {summary[key]}")
 
 
 def _print_summary(summary: dict[str, Any]) -> None:

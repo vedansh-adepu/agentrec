@@ -326,6 +326,40 @@ This log records the chronological engineering history of agentrec for debugging
 - Next step:
   - Step 9: diff engine and diff command.
 
+## 2026-06-02 - Step 9: Diff Engine and CLI Diff Command
+
+- Goal:
+  - Add a small offline diff engine that compares two cassette runs and a CLI command that prints the comparison.
+- Files changed:
+  - `src/agentrec/diff.py`
+  - `src/agentrec/cli.py`
+  - `tests/test_diff.py`
+  - `tests/test_cli.py`
+  - `PROJECT_STATUS.md`
+  - `DEVELOPMENT_LOG.md`
+- Key implementation notes:
+  - Added `diff_cassettes(left_path, right_path)`.
+  - The diff engine validates both cassettes, reads metadata, reads trace steps, and reads final outputs when available.
+  - Diff summaries compare run IDs, tasks, final outputs, step counts, ordered step sequences, step names, total latency, and total cost.
+  - The returned diff summary is JSON-serializable.
+  - Added `agentrec diff --left <path> --right <path>`.
+  - CLI diff output prints key changed flags plus latency and cost deltas.
+  - Missing or malformed cassettes are reported as clear CLI errors with non-zero exit.
+  - Tests verify unchanged equivalent cassettes, final output changes, step count changes, step sequence changes, latency totals, zero cost totals, read-only diff behavior, missing cassette errors, CLI output, no network calls, and continued absence of validate command.
+  - No validate command, live provider, dashboard, database, Docker, GitHub Actions, or packaging behavior was added.
+- Tests run:
+  - `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
+- Result:
+  - 79 tests passed.
+- Bugs/issues found:
+  - None.
+- Decisions made:
+  - Keep diff output plain and line-oriented.
+  - Report latency deltas without making timing jitter alone mark a run as changed.
+  - Keep diff as a read-only cassette comparison layer.
+- Next step:
+  - Step 10: validate command and cassette safety checks.
+
 ## Future Entry Template
 
 ## YYYY-MM-DD - Step N: <name>

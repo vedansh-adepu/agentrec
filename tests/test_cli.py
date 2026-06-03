@@ -129,11 +129,61 @@ def test_show_on_missing_cassette_exits_nonzero_with_clear_message(tmp_path: Pat
     assert "Cassette error:" in result.output
 
 
+def test_diff_command_exits_zero_for_valid_cassettes(tmp_path: Path) -> None:
+    left = tmp_path / "left"
+    right = tmp_path / "right"
+    runner.invoke(app, ["record", "--run-path", str(left), "--expression", "2+3"])
+    runner.invoke(app, ["record", "--run-path", str(right), "--expression", "2+3"])
+
+    result = runner.invoke(app, ["diff", "--left", str(left), "--right", str(right)])
+
+    assert result.exit_code == 0
+
+
+def test_diff_output_includes_changed_status(tmp_path: Path) -> None:
+    left = tmp_path / "left"
+    right = tmp_path / "right"
+    runner.invoke(app, ["record", "--run-path", str(left), "--expression", "2+3"])
+    runner.invoke(app, ["record", "--run-path", str(right), "--expression", "2+3"])
+
+    result = runner.invoke(app, ["diff", "--left", str(left), "--right", str(right)])
+
+    assert "Cassette diff." in result.output
+    assert "changed: False" in result.output
+
+
+def test_diff_output_detects_final_output_difference(tmp_path: Path) -> None:
+    left = tmp_path / "left"
+    right = tmp_path / "right"
+    runner.invoke(app, ["record", "--run-path", str(left), "--expression", "2+3"])
+    runner.invoke(app, ["record", "--run-path", str(right), "--expression", "2+4"])
+
+    result = runner.invoke(app, ["diff", "--left", str(left), "--right", str(right)])
+
+    assert result.exit_code == 0
+    assert "final_output_changed: True" in result.output
+    assert "changed: True" in result.output
+
+
+def test_diff_on_missing_cassette_exits_nonzero_with_clear_message(tmp_path: Path) -> None:
+    left = tmp_path / "left"
+    runner.invoke(app, ["record", "--run-path", str(left), "--expression", "2+3"])
+
+    result = runner.invoke(
+        app,
+        ["diff", "--left", str(left), "--right", str(tmp_path / "missing")],
+    )
+
+    assert result.exit_code == 1
+    assert "Cassette error:" in result.output
+
+
 def test_cli_commands_introduce_no_live_network_calls(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     run_path = tmp_path / "math_run"
+    other_run_path = tmp_path / "math_run_other"
 
     def fail_socket(*args: object, **kwargs: object) -> None:
         raise AssertionError("network should not be used")
@@ -144,18 +194,28 @@ def test_cli_commands_introduce_no_live_network_calls(
         app,
         ["record", "--run-path", str(run_path), "--expression", "2+3"],
     )
+    other_record_result = runner.invoke(
+        app,
+        ["record", "--run-path", str(other_run_path), "--expression", "2+3"],
+    )
     replay_result = runner.invoke(
         app,
         ["replay", "--run-path", str(run_path), "--expression", "2+3"],
     )
     show_result = runner.invoke(app, ["show", "--run-path", str(run_path)])
+    diff_result = runner.invoke(
+        app,
+        ["diff", "--left", str(run_path), "--right", str(other_run_path)],
+    )
 
     assert record_result.exit_code == 0
+    assert other_record_result.exit_code == 0
     assert replay_result.exit_code == 0
     assert show_result.exit_code == 0
+    assert diff_result.exit_code == 0
 
 
-@pytest.mark.parametrize("command", ["diff", "validate"])
+@pytest.mark.parametrize("command", ["validate"])
 def test_cli_does_not_implement_future_commands(command: str) -> None:
     result = runner.invoke(app, [command])
 

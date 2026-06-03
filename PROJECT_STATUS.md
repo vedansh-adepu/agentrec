@@ -14,7 +14,7 @@ agentrec records every model and tool call an AI agent makes, stores the interac
 
 ## Current Status Summary
 
-The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, recorder layer, hermetic replayer layer, tiny offline example math flow, and minimal CLI record/replay/show commands. The codebase can now model, hash, store, call deterministic offline components, record model/tool/final-output events into cassette data, replay cached model/tool responses without live providers, tools, network, or APIs, demonstrate record -> replay through both a Python example API and terminal commands, and inspect cassette metadata and trace steps from the terminal.
+The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, recorder layer, hermetic replayer layer, tiny offline example math flow, minimal CLI record/replay/show commands, and a minimal diff engine with CLI diff command. The codebase can now model, hash, store, call deterministic offline components, record model/tool/final-output events into cassette data, replay cached model/tool responses without live providers, tools, network, or APIs, demonstrate record -> replay through both a Python example API and terminal commands, inspect cassette metadata and trace steps from the terminal, and compare two cassette runs from the terminal.
 
 The first clean project snapshot has been committed and pushed to a private GitHub repository:
 
@@ -126,9 +126,21 @@ Completed:
 - clear CLI errors for missing or malformed cassettes
 - show command tests
 
+### Step 9: Diff Engine and CLI Diff Command
+
+Completed:
+
+- `diff_cassettes()`
+- `agentrec diff --left <path> --right <path>`
+- final output comparison
+- step count comparison
+- step sequence comparison
+- latency and cost totals/deltas
+- diff engine and CLI diff tests
+
 ## Current Test Status
 
-68 tests passing.
+79 tests passing.
 
 Last known command:
 
@@ -196,13 +208,26 @@ Exposes the offline math flow through terminal commands:
 - records an offline math cassette
 - replays an offline math cassette
 - shows cassette metadata and trace steps
+- diffs two cassette runs
 - prints simple summary output
 - exits non-zero with a clear message on replay misses
 - exits non-zero with a clear message on cassette inspection errors
 
+### Diff Layer
+
+Compares two cassette runs without live calls:
+
+- validates both cassette folders
+- compares run IDs and tasks
+- compares final outputs
+- compares step counts and ordered step sequences
+- reports latency totals and deltas
+- reports cost totals and deltas
+- returns a JSON-serializable summary
+
 ## Next Planned Step
 
-Step 9: diff engine and diff command.
+Step 10: validate command and cassette safety checks.
 
 ## Persistent Project Memory
 
@@ -222,24 +247,23 @@ After each completed step, Codex should update:
 
 `ARCHITECTURE_DECISIONS.md` should be updated only when a major design decision is introduced or changed.
 
-## What Step 9 Should Do
+## What Step 10 Should Do
 
-Step 9 should add a focused diff layer and CLI command that:
+Step 10 should add a validate command and cassette safety checks that:
 
-- compares two existing cassettes
-- reports final output changes
-- reports tool sequence changes
-- reports step changes
-- reports cost and latency differences where data exists
+- reads an existing cassette
+- checks required cassette files and directories
+- checks metadata and trace parse cleanly
+- checks cached response files are valid where practical
+- prints clear validation output
+- exits non-zero for invalid cassettes
 - keeps output simple and inspectable
 - remains offline and deterministic
-- avoids validate command for now
 
-## What Step 9 Must Not Do
+## What Step 10 Must Not Do
 
-Step 9 must not add:
+Step 10 must not add:
 
-- validate command
 - live OpenAI provider
 - live Anthropic provider
 - dashboard
@@ -253,11 +277,13 @@ Step 9 must not add:
 
 ## Latest Step Notes
 
-### Step 8
+### Step 9
 
 Files changed:
 
+- `src/agentrec/diff.py`
 - `src/agentrec/cli.py`
+- `tests/test_diff.py`
 - `tests/test_cli.py`
 - `PROJECT_STATUS.md`
 - `DEVELOPMENT_LOG.md`
@@ -268,14 +294,14 @@ Tests run:
 
 Result:
 
-- 68 tests passed.
+- 79 tests passed.
 
 Current status:
 
-- Step 8 show command completed.
+- Step 9 diff engine and CLI diff command completed.
 - Project remains fully offline.
-- No diff command, diff engine, validate command, live providers, CI, dashboard, database, Docker, GitHub Actions, or packaging release was added.
+- No validate command, live providers, CI, dashboard, database, Docker, GitHub Actions, or packaging release was added.
 
 Next step:
 
-- Step 9: diff engine and diff command.
+- Step 10: validate command and cassette safety checks.
