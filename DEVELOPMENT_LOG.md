@@ -205,6 +205,38 @@ This log records the chronological engineering history of agentrec for debugging
 - Next step:
   - Step 5: replayer layer.
 
+## 2026-06-02 - Step 5: Replayer Layer
+
+- Goal:
+  - Implement a small hermetic replayer layer that reads cached model/tool interactions from `CassetteStore` and returns saved responses without live providers, tool registries, network, APIs, or real tools.
+- Files changed:
+  - `src/agentrec/core/__init__.py`
+  - `src/agentrec/core/replayer.py`
+  - `tests/test_replayer.py`
+  - `PROJECT_STATUS.md`
+  - `DEVELOPMENT_LOG.md`
+- Key implementation notes:
+  - Added `AgentReplayer`.
+  - Replayer constructor accepts only `CassetteStore`, validates the cassette, and reads metadata without mutating cassette files.
+  - `replay_model_call()` hashes the JSON-compatible model request, reads the cached model interaction, and returns a validated `ModelResponse`.
+  - `replay_tool_call()` hashes `{"name": name, "arguments": arguments}`, reads the cached tool interaction, and returns a validated `ToolResult`.
+  - Missing cached model/tool interactions raise `ReplayMissError`.
+  - `read_final_output()` reads the recorded final output artifact.
+  - Replayer does not accept or call a `ModelProvider` or `ToolRegistry`.
+  - Tests verify replay equality, replay misses, read-only behavior, deterministic hashes, final output reading, and no network calls.
+- Tests run:
+  - `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
+- Result:
+  - 48 tests passed.
+- Bugs/issues found:
+  - None.
+- Decisions made:
+  - Keep replayer as a read-only hermetic layer.
+  - Translate missing cached model/tool interactions into `ReplayMissError`.
+  - Do not add CLI or example agent flow in this step.
+- Next step:
+  - Step 6: example offline agent flow.
+
 ## Future Entry Template
 
 ## YYYY-MM-DD - Step N: <name>

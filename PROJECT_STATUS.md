@@ -14,7 +14,7 @@ agentrec records every model and tool call an AI agent makes, stores the interac
 
 ## Current Status Summary
 
-The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, and a recorder layer. The codebase is still pre-replayer: it can model, hash, store, call deterministic offline components, and record model/tool/final-output events into cassette data, but it does not yet replay from cassette data.
+The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, recorder layer, and hermetic replayer layer. The codebase can now model, hash, store, call deterministic offline components, record model/tool/final-output events into cassette data, and replay cached model/tool responses without live providers, tools, network, or APIs.
 
 The first clean project snapshot has been committed and pushed to a private GitHub repository:
 
@@ -81,9 +81,22 @@ Completed:
 - metadata final output updates
 - recorder tests
 
+### Step 5: Replayer Layer
+
+Completed:
+
+- `AgentReplayer`
+- cassette validation during replayer construction
+- cached model response replay
+- cached tool result replay
+- final output reading
+- `ReplayMissError` on missing model/tool cached interactions
+- read-only cassette replay behavior
+- replayer tests
+
 ## Current Test Status
 
-37 tests passing.
+48 tests passing.
 
 Last known command:
 
@@ -125,9 +138,19 @@ Coordinates offline provider and tool calls with cassette storage:
 - writes final output artifacts
 - updates run metadata
 
+### Replayer Layer
+
+Reads cached cassette interactions without accepting providers or tool registries:
+
+- replays model responses from cached interactions
+- replays tool results from cached interactions
+- raises `ReplayMissError` on cache misses
+- reads final output artifacts
+- avoids cassette mutation during replay
+
 ## Next Planned Step
 
-Step 5: replayer layer.
+Step 6: example offline agent flow.
 
 ## Persistent Project Memory
 
@@ -147,19 +170,19 @@ After each completed step, Codex should update:
 
 `ARCHITECTURE_DECISIONS.md` should be updated only when a major design decision is introduced or changed.
 
-## What Step 5 Should Do
+## What Step 6 Should Do
 
-Step 5 should add a small replayer layer that:
+Step 6 should add a tiny example offline agent flow that:
 
-- reads cached model interactions from `CassetteStore`
-- reads cached tool interactions from `CassetteStore`
-- returns cached responses without calling live providers or tools
-- raises `ReplayMissError` for missing cached responses
-- stays fully offline and hermetic
+- uses `FakeModelProvider`
+- uses the default calculator tool registry
+- records a simple math run through `AgentRecorder`
+- replays the same model/tool calls through `AgentReplayer`
+- demonstrates record -> replay without CLI commands
 
-## What Step 5 Must Not Do
+## What Step 6 Must Not Do
 
-Step 5 must not add:
+Step 6 must not add:
 
 - CLI commands
 - diff engine
@@ -274,3 +297,28 @@ Current status:
 Next step:
 
 - Step 5: replayer layer.
+
+### Step 5
+
+Files changed:
+
+- `src/agentrec/core/__init__.py`
+- `src/agentrec/core/replayer.py`
+- `tests/test_replayer.py`
+- `PROJECT_STATUS.md`
+- `DEVELOPMENT_LOG.md`
+
+Tests run:
+
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
+
+Current status:
+
+- Step 5 replayer layer completed.
+- Project remains fully offline and replay is hermetic for cached model/tool interactions.
+- Missing cached model/tool interactions raise `ReplayMissError`.
+- No CLI, fake/example agent flow, show command, diff engine, validate command, live providers, dashboard, database, Docker, GitHub Actions, or packaging release was added.
+
+Next step:
+
+- Step 6: example offline agent flow.
