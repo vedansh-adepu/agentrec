@@ -14,7 +14,7 @@ agentrec records every model and tool call an AI agent makes, stores the interac
 
 ## Current Status Summary
 
-The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, recorder layer, hermetic replayer layer, tiny offline example math flow, and minimal CLI record/replay commands. The codebase can now model, hash, store, call deterministic offline components, record model/tool/final-output events into cassette data, replay cached model/tool responses without live providers, tools, network, or APIs, and demonstrate record -> replay through both a Python example API and terminal commands.
+The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, recorder layer, hermetic replayer layer, tiny offline example math flow, and minimal CLI record/replay/show commands. The codebase can now model, hash, store, call deterministic offline components, record model/tool/final-output events into cassette data, replay cached model/tool responses without live providers, tools, network, or APIs, demonstrate record -> replay through both a Python example API and terminal commands, and inspect cassette metadata and trace steps from the terminal.
 
 The first clean project snapshot has been committed and pushed to a private GitHub repository:
 
@@ -116,9 +116,19 @@ Completed:
 - replay miss CLI error handling
 - CLI tests
 
+### Step 8: CLI Show Command
+
+Completed:
+
+- `agentrec show --run-path <path>`
+- cassette metadata inspection
+- ordered trace step inspection
+- clear CLI errors for missing or malformed cassettes
+- show command tests
+
 ## Current Test Status
 
-65 tests passing.
+68 tests passing.
 
 Last known command:
 
@@ -185,12 +195,14 @@ Exposes the offline math flow through terminal commands:
 
 - records an offline math cassette
 - replays an offline math cassette
+- shows cassette metadata and trace steps
 - prints simple summary output
 - exits non-zero with a clear message on replay misses
+- exits non-zero with a clear message on cassette inspection errors
 
 ## Next Planned Step
 
-Step 8: show command for cassette trace inspection.
+Step 9: diff engine and diff command.
 
 ## Persistent Project Memory
 
@@ -210,23 +222,23 @@ After each completed step, Codex should update:
 
 `ARCHITECTURE_DECISIONS.md` should be updated only when a major design decision is introduced or changed.
 
-## What Step 8 Should Do
+## What Step 9 Should Do
 
-Step 8 should add a show command that:
+Step 9 should add a focused diff layer and CLI command that:
 
-- use Typer
-- reads an existing cassette
-- prints run metadata
-- prints trace steps in order
+- compares two existing cassettes
+- reports final output changes
+- reports tool sequence changes
+- reports step changes
+- reports cost and latency differences where data exists
 - keeps output simple and inspectable
-- remain offline and deterministic
-- avoids diff and validate commands for now
+- remains offline and deterministic
+- avoids validate command for now
 
-## What Step 8 Must Not Do
+## What Step 9 Must Not Do
 
-Step 8 must not add:
+Step 9 must not add:
 
-- diff engine
 - validate command
 - live OpenAI provider
 - live Anthropic provider
@@ -241,161 +253,11 @@ Step 8 must not add:
 
 ## Latest Step Notes
 
-### Step 3
-
-Files changed:
-
-- `src/agentrec/providers/__init__.py`
-- `src/agentrec/providers/base.py`
-- `src/agentrec/providers/fake.py`
-- `src/agentrec/tools/__init__.py`
-- `src/agentrec/tools/registry.py`
-- `src/agentrec/tools/builtin.py`
-- `tests/test_fake_provider.py`
-- `tests/test_tool_registry.py`
-
-Tests run:
-
-- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
-
-Current status:
-
-- Step 3 approved.
-- Project is ready for Step 4 planning and implementation after confirmation.
-
-Next step:
-
-- Step 4: recorder layer.
-
-### Docs-Only Production Workflow Setup
-
-Files changed:
-
-- `DEVELOPMENT_LOG.md`
-- `ARCHITECTURE_DECISIONS.md`
-- `QUALITY_CHECKLIST.md`
-- `PRODUCTION_STANDARDS.md`
-- `AGENTS.md`
-- `PROJECT_STATUS.md`
-
-Tests run:
-
-- Not run; documentation-only change.
-
-Current status:
-
-- Production workflow documentation is in place.
-- No runtime behavior changed.
-
-Next step:
-
-- Step 4: recorder layer, after confirmation.
-
-### Step 4
-
-Files changed:
-
-- `src/agentrec/core/__init__.py`
-- `src/agentrec/core/recorder.py`
-- `tests/test_recorder.py`
-- `PROJECT_STATUS.md`
-- `DEVELOPMENT_LOG.md`
-
-Tests run:
-
-- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
-
-Current status:
-
-- Step 4 recorder layer completed.
-- Project remains fully offline.
-- No replayer, CLI, diff engine, live providers, dashboard, database, Docker, CI, or packaging work was added.
-
-Next step:
-
-- Step 5: replayer layer.
-
-### GitHub Push: First Private Repository Snapshot
-
-Files changed:
-
-- `DEVELOPMENT_LOG.md`
-- `PROJECT_STATUS.md`
-
-Tests run:
-
-- Not run for this documentation-only milestone update.
-- Before the push, 37 tests passed with `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`.
-
-Current status:
-
-- Private GitHub repository pushed: `https://github.com/vedansh-adepu/agentrec`
-- Commit pushed: `44c4094 Initialize agentrec offline recording foundation`
-- Remote: `origin https://github.com/vedansh-adepu/agentrec.git`
-- Branch: `main`
-- Final Git status after push: working tree clean
-- No Step 5 work was implemented during push.
-
-Next step:
-
-- Step 5: replayer layer.
-
-### Step 5
-
-Files changed:
-
-- `src/agentrec/core/__init__.py`
-- `src/agentrec/core/replayer.py`
-- `tests/test_replayer.py`
-- `PROJECT_STATUS.md`
-- `DEVELOPMENT_LOG.md`
-
-Tests run:
-
-- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
-
-Current status:
-
-- Step 5 replayer layer completed.
-- Project remains fully offline and replay is hermetic for cached model/tool interactions.
-- Missing cached model/tool interactions raise `ReplayMissError`.
-- No CLI, fake/example agent flow, show command, diff engine, validate command, live providers, dashboard, database, Docker, GitHub Actions, or packaging release was added.
-
-Next step:
-
-- Step 6: example offline agent flow.
-
-### Step 6
-
-Files changed:
-
-- `src/agentrec/examples/__init__.py`
-- `src/agentrec/examples/math_flow.py`
-- `tests/test_example_math_flow.py`
-- `PROJECT_STATUS.md`
-- `DEVELOPMENT_LOG.md`
-
-Tests run:
-
-- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
-
-Current status:
-
-- Step 6 example offline agent flow completed.
-- The flow records a math cassette and replays matching model/tool/final output through Python functions.
-- Project remains fully offline.
-- No CLI commands, show command, diff engine, validate command, live providers, dashboard, database, Docker, GitHub Actions, or packaging release was added.
-
-Next step:
-
-- Step 7: CLI record/replay commands.
-
-### Step 7
+### Step 8
 
 Files changed:
 
 - `src/agentrec/cli.py`
-- `pyproject.toml`
 - `tests/test_cli.py`
 - `PROJECT_STATUS.md`
 - `DEVELOPMENT_LOG.md`
@@ -404,13 +266,16 @@ Tests run:
 
 - `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
 
+Result:
+
+- 68 tests passed.
+
 Current status:
 
-- Step 7 CLI record/replay commands completed.
-- CLI remains fully offline and delegates to the existing math flow only.
-- Replay misses exit non-zero with a clear message.
-- No show command, diff engine, validate command, live providers, dashboard, database, Docker, GitHub Actions, or packaging release was added.
+- Step 8 show command completed.
+- Project remains fully offline.
+- No diff command, diff engine, validate command, live providers, CI, dashboard, database, Docker, GitHub Actions, or packaging release was added.
 
 Next step:
 
-- Step 8: show command for cassette trace inspection.
+- Step 9: diff engine and diff command.

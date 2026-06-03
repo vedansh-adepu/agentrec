@@ -298,6 +298,34 @@ This log records the chronological engineering history of agentrec for debugging
 - Next step:
   - Step 8: show command for cassette trace inspection.
 
+## 2026-06-02 - Step 8: CLI Show Command
+
+- Goal:
+  - Add a minimal Typer-based `show --run-path <path>` command that reads an existing cassette and prints run metadata plus ordered trace steps.
+- Files changed:
+  - `src/agentrec/cli.py`
+  - `tests/test_cli.py`
+  - `PROJECT_STATUS.md`
+  - `DEVELOPMENT_LOG.md`
+- Key implementation notes:
+  - Added `show --run-path <path>`.
+  - The command creates a `CassetteStore`, validates the minimum cassette structure, reads metadata, and reads trace steps.
+  - Output includes `run_id`, `task`, `final_output`, `step_count`, and each step's index, kind, name, request hash when present, and latency when present.
+  - Missing or malformed cassettes are reported as clear CLI errors with non-zero exit.
+  - Tests verify show command success after recording, metadata output, step kind output, missing cassette errors, no network calls, and continued absence of diff/validate commands.
+  - No diff, validate, live provider, dashboard, database, Docker, GitHub Actions, or packaging behavior was added.
+- Tests run:
+  - `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
+- Result:
+  - 68 tests passed.
+- Bugs/issues found:
+  - None.
+- Decisions made:
+  - Keep show output plain and line-oriented instead of adding Rich tables yet.
+  - Treat show as a read-only cassette inspection command only.
+- Next step:
+  - Step 9: diff engine and diff command.
+
 ## Future Entry Template
 
 ## YYYY-MM-DD - Step N: <name>

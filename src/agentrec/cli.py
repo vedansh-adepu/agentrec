@@ -7,8 +7,10 @@ from typing import Any
 
 import typer
 
-from agentrec.errors import ReplayMissError
+from agentrec.errors import CassetteError, ReplayMissError
 from agentrec.examples import record_math_flow, replay_math_flow
+from agentrec.models import RunRecord, Step
+from agentrec.store import CassetteStore
 
 app = typer.Typer(help="Record and replay offline agentrec examples.")
 
@@ -42,6 +44,31 @@ def replay(
     _print_summary(summary)
 
 
+@app.command()
+def show(
+    run_path: Path = typer.Option(..., "--run-path", help="Path to inspect."),
+) -> None:
+    """Show cassette metadata and trace steps."""
+
+    store = CassetteStore(run_path)
+    try:
+        store.validate()
+        run = store.read_metadata()
+        steps = store.read_steps()
+    except CassetteError as exc:
+        typer.secho(f"Cassette error: {exc}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from exc
+    except ValueError as exc:
+        typer.secho(f"Cassette error: malformed cassette: {exc}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from exc
+
+    typer.echo("Cassette run.")
+    _print_run(run, len(steps))
+    typer.echo("steps:")
+    for step in steps:
+        _print_step(step)
+
+
 def _print_summary(summary: dict[str, Any]) -> None:
     for key in (
         "mode",
@@ -52,3 +79,23 @@ def _print_summary(summary: dict[str, Any]) -> None:
         "step_count",
     ):
         typer.echo(f"{key}: {summary[key]}")
+
+
+def _print_run(run: RunRecord, step_count: int) -> None:
+    typer.echo(f"run_id: {run.run_id}")
+    typer.echo(f"task: {run.task}")
+    typer.echo(f"final_output: {run.final_output}")
+    typer.echo(f"step_count: {step_count}")
+
+
+def _print_step(step: Step) -> None:
+    parts = [
+        f"index: {step.index}",
+        f"kind: {step.kind}",
+        f"name: {step.name}",
+    ]
+    if step.request_hash is not None:
+        parts.append(f"request_hash: {step.request_hash}")
+    if step.latency_ms is not None:
+        parts.append(f"latency_ms: {step.latency_ms}")
+    typer.echo("  " + " | ".join(parts))
