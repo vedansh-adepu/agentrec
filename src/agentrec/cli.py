@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -21,9 +23,15 @@ app = typer.Typer(help="Record and replay offline agentrec examples.")
 def record(
     run_path: Path = typer.Option(..., "--run-path", help="Path to write the cassette."),
     expression: str = typer.Option("2+3", "--expression", help="Math expression to record."),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help="Overwrite an existing cassette directory.",
+    ),
 ) -> None:
     """Record the offline math flow."""
 
+    _prepare_record_path(run_path, force)
     summary = record_math_flow(run_path, expression)
     typer.echo("Recorded math flow.")
     _print_summary(summary)
@@ -49,6 +57,7 @@ def replay(
 @app.command()
 def show(
     run_path: Path = typer.Option(..., "--run-path", help="Path to inspect."),
+    json_output: bool = typer.Option(False, "--json", help="Print JSON output."),
 ) -> None:
     """Show cassette metadata and trace steps."""
 
@@ -64,6 +73,16 @@ def show(
         typer.secho(f"Cassette error: malformed cassette: {exc}", err=True, fg=typer.colors.RED)
         raise typer.Exit(code=1) from exc
 
+    if json_output:
+        _print_json(
+            {
+                "run": run.model_dump(mode="json"),
+                "step_count": len(steps),
+                "steps": [step.model_dump(mode="json") for step in steps],
+            },
+        )
+        return
+
     typer.echo("Cassette run.")
     _print_run(run, len(steps))
     typer.echo("steps:")
@@ -75,6 +94,7 @@ def show(
 def diff(
     left: Path = typer.Option(..., "--left", help="Left cassette path."),
     right: Path = typer.Option(..., "--right", help="Right cassette path."),
+    json_output: bool = typer.Option(False, "--json", help="Print JSON output."),
 ) -> None:
     """Diff two cassette runs."""
 
@@ -86,6 +106,10 @@ def diff(
     except ValueError as exc:
         typer.secho(f"Cassette error: malformed cassette: {exc}", err=True, fg=typer.colors.RED)
         raise typer.Exit(code=1) from exc
+
+    if json_output:
+        _print_json(summary)
+        return
 
     typer.echo("Cassette diff.")
     for key in (
@@ -104,16 +128,24 @@ def diff(
 @app.command()
 def validate(
     run_path: Path = typer.Option(..., "--run-path", help="Cassette path to validate."),
+    json_output: bool = typer.Option(False, "--json", help="Print JSON output."),
 ) -> None:
     """Validate cassette structure and parseability."""
 
     summary = validate_cassette(run_path)
+    if json_output:
+        _print_json(summary)
+        if summary["errors"]:
+            raise typer.Exit(code=1)
+        return
+
     typer.echo("Cassette validation.")
     for key in (
         "ok",
         "run_path",
         "run_id",
         "task",
+        "schema_version",
         "step_count",
         "response_file_count",
         "has_final_output",
@@ -124,6 +156,45 @@ def validate(
         for error in summary["errors"]:
             typer.echo(f"  {error}")
         raise typer.Exit(code=1)
+
+
+def _prepare_record_path(run_path: Path, force: bool) -> None:
+    if not run_path.exists():
+        return
+
+    if run_path.is_dir() and not any(run_path.iterdir()):
+        return
+
+    if not force:
+        typer.secho(
+            f"Record path already exists and is not empty: {run_path}. "
+            "Use --force to overwrite it.",
+            err=True,
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(code=1)
+
+    if run_path.is_dir():
+        if (run_path / ".git").exists():
+            typer.secho(
+                f"Refusing to overwrite directory that contains .git: {run_path}",
+                err=True,
+                fg=typer.colors.RED,
+            )
+            raise typer.Exit(code=1)
+        shutil.rmtree(run_path)
+        return
+
+    if run_path.is_file():
+        run_path.unlink()
+        return
+
+    typer.secho(f"Cannot overwrite unsupported path type: {run_path}", err=True, fg=typer.colors.RED)
+    raise typer.Exit(code=1)
+
+
+def _print_json(data: dict[str, Any]) -> None:
+    typer.echo(json.dumps(data, indent=2, sort_keys=True))
 
 
 def _print_summary(summary: dict[str, Any]) -> None:

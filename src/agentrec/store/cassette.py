@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Literal
 
 from agentrec.errors import CassetteNotFoundError, CassetteValidationError
-from agentrec.models import CachedInteraction, RunRecord, Step
+from agentrec.models import CASSETTE_SCHEMA_VERSION, CachedInteraction, RunRecord, Step
 
 
 class CassetteStore:
@@ -105,10 +106,23 @@ class CassetteStore:
 
         if not self.metadata_path.is_file():
             raise CassetteValidationError(f"Missing metadata.json: {self.metadata_path}")
+        if not self.trace_path.is_file():
+            raise CassetteValidationError(f"Missing trace.jsonl: {self.trace_path}")
         if not self.responses_path.is_dir():
             raise CassetteValidationError(f"Missing responses directory: {self.responses_path}")
         if not self.artifacts_path.is_dir():
             raise CassetteValidationError(f"Missing artifacts directory: {self.artifacts_path}")
+        try:
+            metadata = json.loads(self.metadata_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise CassetteValidationError(f"Malformed metadata.json: {self.metadata_path}") from exc
+
+        schema_version = metadata.get("schema_version")
+        if schema_version != CASSETTE_SCHEMA_VERSION:
+            raise CassetteValidationError(
+                f"Unsupported cassette schema version {schema_version!r}; "
+                f"expected {CASSETTE_SCHEMA_VERSION!r}",
+            )
 
     def _interaction_path(self, request_hash: str, kind: Literal["model", "tool"]) -> Path:
         return self.responses_path / f"{request_hash}_{kind}.json"

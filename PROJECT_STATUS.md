@@ -14,7 +14,7 @@ agentrec records every model and tool call an AI agent makes, stores the interac
 
 ## Current Status Summary
 
-The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, recorder layer, hermetic replayer layer, tiny offline example math flow, minimal CLI record/replay/show/diff/validate commands, a minimal diff engine, cassette validation safety checks, a public-facing README/demo document, a GitHub Actions test workflow, a public release readiness checklist, an MIT license, and a public GitHub repository. The codebase can now model, hash, store, call deterministic offline components, record model/tool/final-output events into cassette data, replay cached model/tool responses without live providers, tools, network, or APIs, demonstrate record -> replay through both a Python example API and terminal commands, inspect cassette metadata and trace steps from the terminal, compare two cassette runs from the terminal, validate cassette structure and parseability, explain the MVP clearly to a new developer, and run tests automatically on push and pull requests.
+The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, recorder layer, hermetic replayer layer, tiny offline example math flow, CLI record/replay/show/diff/validate commands, a minimal diff engine, cassette validation safety checks, a public-facing README/demo document, a GitHub Actions test workflow, a public release readiness checklist, an MIT license, a public GitHub repository, schema-versioned cassettes, JSON output for inspection commands, and safe overwrite protection for recording. The codebase can now model, hash, store, call deterministic offline components, record model/tool/final-output events into cassette data, replay cached model/tool responses without live providers, tools, network, or APIs, demonstrate record -> replay through both a Python example API and terminal commands, inspect cassette metadata and trace steps from the terminal, compare two cassette runs from the terminal, validate cassette structure and parseability, explain the MVP clearly to a new developer, and run tests automatically on push and pull requests.
 
 The first clean project snapshot was committed and pushed to GitHub:
 
@@ -218,7 +218,7 @@ Completed:
 
 ## Current Test Status
 
-91 tests passing.
+104 tests passing.
 
 GitHub Actions CI is green for Python 3.11 and 3.12.
 
@@ -242,6 +242,8 @@ Writes and reads cassette files on disk:
 - `trace.jsonl`
 - `responses/<request_hash>_<kind>.json`
 - `artifacts/final_output.txt`
+
+Current cassette schema version: `1`.
 
 ### Offline Provider/Tool Layer
 
@@ -290,6 +292,8 @@ Exposes the offline math flow through terminal commands:
 - shows cassette metadata and trace steps
 - diffs two cassette runs
 - validates cassette structure and parseability
+- prints JSON output for `show`, `diff`, and `validate`
+- protects existing run paths unless `record --force` is explicit
 - prints simple summary output
 - exits non-zero with a clear message on replay misses
 - exits non-zero with a clear message on cassette inspection errors
@@ -311,16 +315,19 @@ Compares two cassette runs without live calls:
 Checks cassette safety without mutating files:
 
 - checks required files and directories
+- checks metadata schema version
 - parses run metadata
 - parses trace JSONL steps
+- verifies trace step indexes
 - reads final output when present
 - parses and validates cached interaction response files
+- checks response filenames against cached interaction payloads
 - returns a JSON-serializable validation summary
 - reports errors without raising for expected validation failures
 
 ## Next Planned Step
 
-Step 15: optional post-release polish.
+Post-release production hardening follow-up.
 
 ## Persistent Project Memory
 
@@ -417,39 +424,47 @@ Step 15 must not:
 
 ## Latest Step Notes
 
-### Step 14C
+### 2026-06-03 Production Hardening Pass
 
 Files changed:
 
-- `PUBLIC_RELEASE_CHECKLIST.md`
+- `README.md`
+- `PRODUCTION_READINESS.md`
+- `pyproject.toml`
+- `examples/math_demo.py`
+- `src/agentrec/cli.py`
+- `src/agentrec/models.py`
+- `src/agentrec/store/cassette.py`
+- `src/agentrec/validation.py`
+- `tests/test_cassette_store.py`
+- `tests/test_cli.py`
+- `tests/test_models.py`
+- `tests/test_validation.py`
+- `ARCHITECTURE_DECISIONS.md`
 - `PROJECT_STATUS.md`
 - `DEVELOPMENT_LOG.md`
 
 Tests run:
 
-- Not run; documentation-only change.
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python examples/math_demo.py`
+- `python -m pip install -e . --no-deps --target /private/tmp/agentrec-install-check`
 
 Result:
 
-- Repository made public: `https://github.com/vedansh-adepu/agentrec`.
-- Final visibility verified as public.
-- Working tree after visibility change was clean.
-- Branch `main` was up to date with `origin/main`.
-- No files were modified during the visibility change.
-- Runtime behavior did not change.
+- CLI hardening added for JSON output and explicit overwrite behavior.
+- Cassette metadata now includes schema version `1`.
+- Validation checks schema version, trace indexes, and response filename consistency.
+- README, package metadata, production readiness docs, and offline example script improved.
+- Untracked `src/.DS_Store` artifact removed.
+- 104 tests passed locally.
 
 Current status:
 
-- Step 14C public repository release completed.
-- CI was green before public release.
-- MIT license exists.
-- README exists.
-- `PUBLIC_RELEASE_CHECKLIST.md` exists.
-- No secrets, `.env` files, generated runs, virtualenvs, cache folders, or temporary/log files were found in the final check.
 - Repository is public.
 - Project remains fully offline.
-- No source code, tests, pyproject, CI workflow, packaging, GitHub settings, or repo visibility was changed.
+- No live providers, dashboard, database, Docker, or paid API behavior was added.
 
 Next step:
 
-- Step 15: optional post-release polish.
+- Optional v0.2 follow-up work after CI verification.

@@ -6,8 +6,12 @@ build-backend = "hatchling.build"
 name = "agentrec"
 version = "0.1.0"
 description = "Deterministic record-and-replay harness for AI-agent runs."
-readme = "PROJECT_BRIEF.md"
+readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "Vedansh Adepu" },
+]
 dependencies = [
   "pydantic>=2.7",
   "rich>=13.7",
@@ -21,6 +25,11 @@ agentrec = "agentrec.cli:app"
 test = [
   "pytest>=8.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/vedansh-adepu/agentrec"
+Repository = "https://github.com/vedansh-adepu/agentrec"
+Issues = "https://github.com/vedansh-adepu/agentrec/issues"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,4 +1,4 @@
-from agentrec.models import CachedInteraction, RunRecord, Step, Usage
+from agentrec.models import CASSETTE_SCHEMA_VERSION, CachedInteraction, RunRecord, Step, Usage
 
 
 def test_run_record_serializes_to_json() -> None:
@@ -28,6 +28,7 @@ def test_run_record_serializes_to_json() -> None:
     payload = run.model_dump_json()
 
     assert '"run_id":"run_001"' in payload
+    assert f'"schema_version":"{CASSETTE_SCHEMA_VERSION}"' in payload
     assert '"final_output":"5"' in payload
 
 

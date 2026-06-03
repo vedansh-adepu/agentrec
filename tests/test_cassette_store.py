@@ -1,9 +1,10 @@
+import json
 from pathlib import Path
 
 import pytest
 
 from agentrec.errors import CassetteNotFoundError, CassetteValidationError
-from agentrec.models import CachedInteraction, RunRecord, Step, Usage
+from agentrec.models import CASSETTE_SCHEMA_VERSION, CachedInteraction, RunRecord, Step, Usage
 from agentrec.store import CassetteStore
 
 
@@ -53,6 +54,15 @@ def test_write_and_read_metadata_round_trips_run_record(tmp_path: Path) -> None:
     store.write_metadata(run)
 
     assert store.read_metadata() == run
+
+
+def test_metadata_includes_schema_version(tmp_path: Path) -> None:
+    store = CassetteStore(tmp_path / "cassette")
+
+    store.initialize(make_run())
+
+    payload = json.loads(store.metadata_path.read_text(encoding="utf-8"))
+    assert payload["schema_version"] == CASSETTE_SCHEMA_VERSION
 
 
 def test_append_and_read_steps_round_trips_steps_in_order(tmp_path: Path) -> None:
@@ -114,4 +124,24 @@ def test_validate_raises_for_broken_cassette(tmp_path: Path) -> None:
     (tmp_path / "cassette" / "artifacts").mkdir()
 
     with pytest.raises(CassetteValidationError):
+        store.validate()
+
+
+def test_validate_raises_when_trace_is_missing(tmp_path: Path) -> None:
+    store = CassetteStore(tmp_path / "cassette")
+    store.initialize(make_run())
+    store.trace_path.unlink()
+
+    with pytest.raises(CassetteValidationError, match="Missing trace.jsonl"):
+        store.validate()
+
+
+def test_validate_raises_for_unsupported_schema_version(tmp_path: Path) -> None:
+    store = CassetteStore(tmp_path / "cassette")
+    store.initialize(make_run())
+    payload = json.loads(store.metadata_path.read_text(encoding="utf-8"))
+    payload["schema_version"] = "999"
+    store.metadata_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(CassetteValidationError, match="Unsupported cassette schema version"):
         store.validate()

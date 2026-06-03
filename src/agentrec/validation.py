@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from agentrec.models import CachedInteraction
+from agentrec.models import CASSETTE_SCHEMA_VERSION, CachedInteraction
 from agentrec.store import CassetteStore
 
 
@@ -21,6 +21,7 @@ def validate_cassette(run_path: str | Path) -> dict[str, Any]:
     step_count = 0
     response_file_count = 0
     has_final_output = False
+    schema_version: str | None = None
 
     if not path.exists():
         errors.append(f"Missing cassette path: {path}")
@@ -38,6 +39,17 @@ def validate_cassette(run_path: str | Path) -> dict[str, Any]:
 
     if store.metadata_path.is_file():
         try:
+            metadata = json.loads(store.metadata_path.read_text(encoding="utf-8"))
+            raw_schema_version = metadata.get("schema_version")
+            if raw_schema_version is None:
+                errors.append("Missing metadata schema_version")
+            elif raw_schema_version != CASSETTE_SCHEMA_VERSION:
+                errors.append(
+                    f"Unsupported metadata schema_version {raw_schema_version!r}; "
+                    f"expected {CASSETTE_SCHEMA_VERSION!r}",
+                )
+            else:
+                schema_version = raw_schema_version
             run = store.read_metadata()
             run_id = run.run_id
             task = run.task
@@ -46,7 +58,15 @@ def validate_cassette(run_path: str | Path) -> dict[str, Any]:
 
     if store.trace_path.is_file():
         try:
-            step_count = len(store.read_steps())
+            steps = store.read_steps()
+            step_count = len(steps)
+            expected_indexes = list(range(step_count))
+            actual_indexes = [step.index for step in steps]
+            if actual_indexes != expected_indexes:
+                errors.append(
+                    "Invalid trace.jsonl: step indexes must be ordered from 0 "
+                    f"without gaps; got {actual_indexes}",
+                )
         except Exception as exc:  # noqa: BLE001 - validation should collect failures.
             errors.append(f"Invalid trace.jsonl: {exc}")
 
@@ -63,7 +83,19 @@ def validate_cassette(run_path: str | Path) -> dict[str, Any]:
         for response_file in response_files:
             try:
                 data = json.loads(response_file.read_text(encoding="utf-8"))
-                CachedInteraction.model_validate(data)
+                interaction = CachedInteraction.model_validate(data)
+                expected_suffix = f"_{interaction.kind}.json"
+                if not response_file.name.endswith(expected_suffix):
+                    errors.append(
+                        f"Invalid response file {response_file.name}: "
+                        f"filename kind does not match payload kind {interaction.kind!r}",
+                    )
+                expected_name = f"{interaction.request_hash}_{interaction.kind}.json"
+                if response_file.name != expected_name:
+                    errors.append(
+                        f"Invalid response file {response_file.name}: "
+                        f"expected filename {expected_name}",
+                    )
             except Exception as exc:  # noqa: BLE001 - validation should collect failures.
                 errors.append(f"Invalid response file {response_file.name}: {exc}")
 
@@ -72,6 +104,7 @@ def validate_cassette(run_path: str | Path) -> dict[str, Any]:
         "run_path": str(path),
         "run_id": run_id,
         "task": task,
+        "schema_version": schema_version,
         "step_count": step_count,
         "response_file_count": response_file_count,
         "has_final_output": has_final_output,

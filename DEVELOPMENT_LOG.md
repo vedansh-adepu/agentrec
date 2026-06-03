@@ -545,6 +545,54 @@ This log records the chronological engineering history of agentrec for debugging
 - Next step:
   - Step 15: optional post-release polish.
 
+## 2026-06-03 - Production Hardening Pass
+
+- Goal:
+  - Make agentrec more usable as a real local developer tool while preserving offline deterministic record/replay behavior.
+- Files changed:
+  - `README.md`
+  - `PRODUCTION_READINESS.md`
+  - `pyproject.toml`
+  - `examples/math_demo.py`
+  - `src/agentrec/cli.py`
+  - `src/agentrec/models.py`
+  - `src/agentrec/store/cassette.py`
+  - `src/agentrec/validation.py`
+  - `tests/test_cassette_store.py`
+  - `tests/test_cli.py`
+  - `tests/test_models.py`
+  - `tests/test_validation.py`
+  - `ARCHITECTURE_DECISIONS.md`
+  - `PROJECT_STATUS.md`
+  - `DEVELOPMENT_LOG.md`
+- Key implementation notes:
+  - Added `schema_version` to run metadata and cassette schema validation.
+  - Added `--json` output for `show`, `diff`, and `validate`.
+  - Added safe overwrite protection for `record`, with explicit `--force` required for existing non-empty run paths.
+  - Strengthened validation for trace index ordering and response filename/payload consistency.
+  - Improved package metadata by pointing `readme` to `README.md`, adding MIT license metadata, author metadata, and project URLs.
+  - Added `examples/math_demo.py` as a small offline demo script that writes only to a temporary directory.
+  - Added `PRODUCTION_READINESS.md` with supported behavior, intentional non-support, real usage checklist, and v0.2 tasks.
+  - Updated README with JSON output, exit codes, overwrite behavior, cassette schema version, and a command transcript.
+  - Removed an untracked `src/.DS_Store` OS artifact from the working tree.
+  - No live providers, paid APIs, dashboard, web app, database, Docker, or package publishing behavior was added.
+- Tests run:
+  - `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
+  - `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python examples/math_demo.py`
+  - `python -m pip install -e . --no-deps --target /private/tmp/agentrec-install-check`
+- Result:
+  - 104 tests passed locally.
+  - Offline example script returned matching record/replay outputs.
+  - Editable install smoke check passed.
+- Bugs/issues found:
+  - `src/.DS_Store` was present as an untracked OS artifact and was removed.
+- Decisions made:
+  - Keep machine-readable output limited to inspection/report commands for now.
+  - Keep overwrite behavior conservative: existing non-empty record paths fail unless `--force` is explicit.
+  - Keep live provider support out of scope until the offline core remains stable.
+- Next step:
+  - Push changes and verify GitHub Actions.
+
 ## Future Entry Template
 
 ## YYYY-MM-DD - Step N: <name>

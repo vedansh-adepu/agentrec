@@ -7,6 +7,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+CASSETTE_SCHEMA_VERSION = "1"
+
 
 class AgentRecModel(BaseModel):
     """Base model with deterministic JSON-friendly defaults."""
@@ -50,6 +52,7 @@ class CachedInteraction(AgentRecModel):
 class RunRecord(AgentRecModel):
     """Serializable summary of one recorded agent run."""
 
+    schema_version: str = CASSETTE_SCHEMA_VERSION
     run_id: str
     task: str
     steps: list[Step] = Field(default_factory=list)

@@ -37,6 +37,12 @@ agentrec record --run-path runs/math_002 --expression "2+4"
 agentrec diff --left runs/math_001 --right runs/math_002
 ```
 
+Recording refuses to overwrite an existing non-empty run path unless `--force` is explicit:
+
+```bash
+agentrec record --run-path runs/math_001 --expression "2+3" --force
+```
+
 ## Local Setup
 
 ```bash
@@ -45,6 +51,8 @@ source .venv/bin/activate
 pip install -e ".[test]"
 pytest
 ```
+
+After installation from a local clone, the `agentrec` console command is available from the active environment.
 
 ## CI
 
@@ -69,6 +77,68 @@ responses/<request_hash>_<kind>.json
 
 where `kind` is `model` or `tool`.
 
+`metadata.json` includes a `schema_version` field. The current cassette schema version is `1`.
+
+## Command Output and Exit Codes
+
+`show`, `diff`, and `validate` support machine-readable output:
+
+```bash
+agentrec show --run-path runs/math_001 --json
+agentrec diff --left runs/math_001 --right runs/math_002 --json
+agentrec validate --run-path runs/math_001 --json
+```
+
+Exit codes:
+
+- `0`: success
+- `1`: replay miss, validation failure, cassette error, or record overwrite policy failure
+- `2`: Typer usage/configuration error
+
+## Example Transcript
+
+```bash
+$ agentrec record --run-path runs/math_001 --expression "2+3"
+Recorded math flow.
+mode: record
+expression: 2+3
+model_output: Use the calculator tool for: calculate 2+3
+tool_output: {'result': 5}
+final_output: 5
+step_count: 3
+
+$ agentrec replay --run-path runs/math_001 --expression "2+3"
+Replayed math flow.
+mode: replay
+expression: 2+3
+model_output: Use the calculator tool for: calculate 2+3
+tool_output: {'result': 5}
+final_output: 5
+step_count: 3
+
+$ agentrec show --run-path runs/math_001
+Cassette run.
+run_id: math_flow
+task: Calculate 2+3
+final_output: 5
+step_count: 3
+steps:
+  index: 0 | kind: model | name: fake-math | request_hash: <hash> | latency_ms: <ms>
+  index: 1 | kind: tool | name: calculator | request_hash: <hash> | latency_ms: <ms>
+  index: 2 | kind: final | name: final_output
+
+$ agentrec validate --run-path runs/math_001
+Cassette validation.
+ok: True
+run_path: runs/math_001
+run_id: math_flow
+task: Calculate 2+3
+schema_version: 1
+step_count: 3
+response_file_count: 2
+has_final_output: True
+```
+
 ## Current Production Guarantees
 
 - Replay is hermetic for cached model and tool interactions.
@@ -81,10 +151,10 @@ where `kind` is `model` or `tool`.
 
 ## Current Status
 
-- 91 tests passing.
+- Test suite runs locally and in GitHub Actions.
 - Tests pass through GitHub Actions CI on Python 3.11 and 3.12.
 - Offline math demo only.
-- Repository remains private for now.
+- Repository is public.
 - Live providers are not implemented yet.
 - CLI commands currently available: `record`, `replay`, `show`, `diff`, and `validate`.
 - Licensed under the MIT License.
@@ -94,12 +164,11 @@ where `kind` is `model` or `tool`.
 - No live provider integrations yet.
 - No LangChain or LangGraph adapters yet.
 - The example flow currently uses a fake provider and calculator tool.
-- No public release or package publishing yet.
+- No package publishing yet.
 - The CLI is intentionally plain and line-oriented.
 
 ## Roadmap
 
-- Final public visibility approval.
 - Optional README badge.
 - Richer demo screenshots or terminal captures.
 - Optional live provider wrappers.
