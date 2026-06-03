@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agentrec"
+version = "0.1.0"
+description = "Deterministic record-and-replay harness for AI-agent runs."
+readme = "PROJECT_BRIEF.md"
+requires-python = ">=3.11"
+dependencies = [
+  "pydantic>=2.7",
+  "rich>=13.7",
+  "typer>=0.12",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
