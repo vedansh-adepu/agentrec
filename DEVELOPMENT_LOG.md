@@ -515,6 +515,36 @@ This log records the chronological engineering history of agentrec for debugging
 - Next step:
   - Step 14B: final public visibility check.
 
+## 2026-06-02 - Step 14C: Public Repository Release
+
+- Goal:
+  - Record that the repository was made public after the final readiness check passed.
+- Files changed:
+  - `PROJECT_STATUS.md`
+  - `DEVELOPMENT_LOG.md`
+  - `PUBLIC_RELEASE_CHECKLIST.md`
+- Key implementation notes:
+  - Recorded the public repository URL: `https://github.com/vedansh-adepu/agentrec`.
+  - Recorded final visibility as public.
+  - Recorded that the working tree stayed clean and `main` was up to date with `origin/main` after the visibility change.
+  - Recorded that no files were modified during the visibility change.
+  - Recorded that CI was green before public release.
+  - Recorded that `README.md`, `LICENSE`, and `PUBLIC_RELEASE_CHECKLIST.md` exist.
+  - Recorded that no secrets, `.env` files, generated runs, virtualenvs, cache folders, or temporary/log files were found in the final check.
+  - No source code, tests, runtime behavior, CI workflow, pyproject configuration, packaging, or GitHub settings changed during this docs-only update.
+- Tests run:
+  - Not run; documentation-only change.
+- Result:
+  - Public release milestone is documented.
+  - Repository is public.
+- Bugs/issues found:
+  - None.
+- Decisions made:
+  - Keep post-release work optional and scoped.
+  - Continue treating live providers and packaging release behavior as future explicitly approved work.
+- Next step:
+  - Step 15: optional post-release polish.
+
 ## Future Entry Template
 
 ## YYYY-MM-DD - Step N: <name>

@@ -1,18 +1,19 @@
 # Public Release Checklist
 
-This checklist gates any decision to make agentrec public. Repository visibility must not change without explicit owner approval.
+This checklist records the public release readiness checks for agentrec.
 
 ## Required Before Public Visibility
 
 - [x] CI is green on GitHub Actions.
 - [x] README is accurate for the current offline MVP.
-- [ ] Confirm no secrets, API keys, or `.env` files are tracked.
-- [ ] Confirm no generated private `runs/` data is tracked.
+- [x] Confirm no secrets, API keys, or `.env` files are tracked.
+- [x] Confirm no generated private `runs/` data is tracked.
 - [ ] Confirm the CLI demo works from a clean local setup.
 - [x] Current limitations are documented honestly.
 - [x] License decision is made: MIT.
 - [x] `LICENSE` file is added.
-- [ ] Repository visibility change is explicitly approved by the owner.
+- [x] Repository visibility change is explicitly approved by the owner.
+- [x] Repository visibility changed to public.
 
 ## Optional Future Polish
 
@@ -23,7 +24,8 @@ This checklist gates any decision to make agentrec public. Repository visibility
 
 ## Notes
 
-- The repository remains private for now.
+- The repository is now public: `https://github.com/vedansh-adepu/agentrec`.
 - The MIT License has been selected and added.
+- The final visibility check found no secrets, `.env` files, generated runs, virtualenvs, cache folders, or temporary/log files.
 - The current MVP is offline-only and uses a fake model provider plus calculator tool.
 - Public release should not imply live OpenAI, Anthropic, LangChain, or LangGraph support until those integrations are implemented and tested.
