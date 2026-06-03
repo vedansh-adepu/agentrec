@@ -395,6 +395,36 @@ This log records the chronological engineering history of agentrec for debugging
 - Next step:
   - Step 11: README/demo polish and public-facing documentation.
 
+## 2026-06-02 - Step 11: README and Demo Documentation
+
+- Goal:
+  - Make the repository understandable and presentable through a strong README and demo documentation while keeping the repository private and changing no runtime behavior.
+- Files changed:
+  - `README.md`
+  - `PROJECT_STATUS.md`
+  - `DEVELOPMENT_LOG.md`
+- Key implementation notes:
+  - Added a public-facing README that explains what agentrec is and why AI-agent runs are hard to test.
+  - Documented the record, replay, show, diff, and validate workflow.
+  - Added copy-pasteable local setup commands.
+  - Added current CLI demo commands for the offline math flow.
+  - Documented the cassette folder structure.
+  - Documented current production guarantees, current status, limitations, non-goals, and roadmap.
+  - Updated `PROJECT_STATUS.md` to mark Step 11 complete and set Step 12 as GitHub Actions CI.
+  - No source code, tests, runtime behavior, pyproject configuration, CI, packaging, GitHub settings, or repo visibility changed.
+- Tests run:
+  - Not run; documentation-only change.
+- Result:
+  - README/demo documentation is in place.
+  - Project remains private and ready for Step 12: GitHub Actions CI.
+- Bugs/issues found:
+  - None.
+- Decisions made:
+  - Keep the README clear, technical, and honest about offline-only MVP scope.
+  - Avoid overclaiming live provider or adapter support before those layers exist.
+- Next step:
+  - Step 12: GitHub Actions CI.
+
 ## Future Entry Template
 
 ## YYYY-MM-DD - Step N: <name>

@@ -14,7 +14,7 @@ agentrec records every model and tool call an AI agent makes, stores the interac
 
 ## Current Status Summary
 
-The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, recorder layer, hermetic replayer layer, tiny offline example math flow, minimal CLI record/replay/show/diff/validate commands, a minimal diff engine, and cassette validation safety checks. The codebase can now model, hash, store, call deterministic offline components, record model/tool/final-output events into cassette data, replay cached model/tool responses without live providers, tools, network, or APIs, demonstrate record -> replay through both a Python example API and terminal commands, inspect cassette metadata and trace steps from the terminal, compare two cassette runs from the terminal, and validate cassette structure and parseability.
+The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, recorder layer, hermetic replayer layer, tiny offline example math flow, minimal CLI record/replay/show/diff/validate commands, a minimal diff engine, cassette validation safety checks, and a public-facing README/demo document. The codebase can now model, hash, store, call deterministic offline components, record model/tool/final-output events into cassette data, replay cached model/tool responses without live providers, tools, network, or APIs, demonstrate record -> replay through both a Python example API and terminal commands, inspect cassette metadata and trace steps from the terminal, compare two cassette runs from the terminal, validate cassette structure and parseability, and explain the MVP clearly to a new developer.
 
 The first clean project snapshot has been committed and pushed to a private GitHub repository:
 
@@ -150,6 +150,18 @@ Completed:
 - final output presence reporting
 - validation layer and CLI validate tests
 
+### Step 11: README and Demo Documentation
+
+Completed:
+
+- `README.md`
+- current problem and solution framing
+- local setup instructions
+- CLI demo commands
+- cassette format explanation
+- current guarantees and limitations
+- roadmap and non-goals
+
 ## Current Test Status
 
 91 tests passing.
@@ -252,7 +264,7 @@ Checks cassette safety without mutating files:
 
 ## Next Planned Step
 
-Step 11: README/demo polish and public-facing documentation.
+Step 12: GitHub Actions CI.
 
 ## Persistent Project Memory
 
@@ -272,29 +284,26 @@ After each completed step, Codex should update:
 
 `ARCHITECTURE_DECISIONS.md` should be updated only when a major design decision is introduced or changed.
 
-## What Step 11 Should Do
+## What Step 12 Should Do
 
-Step 11 should add README/demo polish and public-facing documentation that:
+Step 12 should add GitHub Actions CI that:
 
-- explains what agentrec does
-- shows the offline math record/replay/show/diff/validate flow
-- includes copy-pasteable local commands
-- explains the cassette folder format
-- documents current limitations and non-goals
-- keeps the repository private until docs, CI, and demo quality are strong enough
-- keeps output simple and inspectable
-- remains honest about offline-only MVP scope
+- runs the test suite on pull requests and pushes
+- uses Python 3.11+
+- installs project test dependencies
+- avoids secrets and live network/API calls beyond dependency installation
+- keeps the workflow minimal and readable
+- preserves offline test behavior
 
-## What Step 11 Must Not Do
+## What Step 12 Must Not Do
 
-Step 11 must not add:
+Step 12 must not add:
 
 - live OpenAI provider
 - live Anthropic provider
 - dashboard
 - database
 - Docker
-- GitHub Actions
 - packaging release
 - public repo visibility change
 
@@ -307,31 +316,29 @@ Step 11 must not add:
 
 ## Latest Step Notes
 
-### Step 10
+### Step 11
 
 Files changed:
 
-- `src/agentrec/validation.py`
-- `src/agentrec/cli.py`
-- `tests/test_validation.py`
-- `tests/test_cli.py`
+- `README.md`
 - `PROJECT_STATUS.md`
 - `DEVELOPMENT_LOG.md`
 
 Tests run:
 
-- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
+- Not run; documentation-only change.
 
 Result:
 
-- 91 tests passed.
+- README and demo documentation completed.
+- Runtime behavior did not change.
 
 Current status:
 
-- Step 10 validate command and cassette safety checks completed.
+- Step 11 README/demo polish completed.
 - Project remains fully offline.
-- No live providers, CI, dashboard, database, Docker, GitHub Actions, packaging release, or public repo visibility change was added.
+- No source code, tests, pyproject, CI, packaging, GitHub settings, or repo visibility was changed.
 
 Next step:
 
-- Step 11: README/demo polish and public-facing documentation.
+- Step 12: GitHub Actions CI.
