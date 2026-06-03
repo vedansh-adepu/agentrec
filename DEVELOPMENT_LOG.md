@@ -237,6 +237,36 @@ This log records the chronological engineering history of agentrec for debugging
 - Next step:
   - Step 6: example offline agent flow.
 
+## 2026-06-02 - Step 6: Example Offline Agent Flow
+
+- Goal:
+  - Add a tiny offline example flow that records a simple math task into a cassette and replays the same model/tool calls from the cassette without CLI commands.
+- Files changed:
+  - `src/agentrec/examples/__init__.py`
+  - `src/agentrec/examples/math_flow.py`
+  - `tests/test_example_math_flow.py`
+  - `PROJECT_STATUS.md`
+  - `DEVELOPMENT_LOG.md`
+- Key implementation notes:
+  - Added `record_math_flow()`.
+  - Added `replay_math_flow()`.
+  - The record flow creates a `CassetteStore`, `RunRecord`, `FakeModelProvider`, default tool registry, and `AgentRecorder`.
+  - The record flow records a model call, records a calculator tool call, derives final output from the calculator result, and finishes the cassette.
+  - The replay flow creates an `AgentReplayer`, replays the same model/tool calls, reads final output, and returns a summary dictionary.
+  - Tests verify cassette creation, record/replay output equality, expected step kinds, read-only replay behavior, replay misses on changed expressions, and no network calls.
+  - No CLI commands were added.
+- Tests run:
+  - `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
+- Result:
+  - 55 tests passed.
+- Bugs/issues found:
+  - None.
+- Decisions made:
+  - Keep the example as a Python API layer only.
+  - Use the existing fake provider and built-in calculator registry rather than adding an agent framework.
+- Next step:
+  - Step 7: CLI record/replay commands.
+
 ## Future Entry Template
 
 ## YYYY-MM-DD - Step N: <name>
