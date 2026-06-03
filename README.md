@@ -79,6 +79,7 @@ where `kind` is `model` or `tool`.
 ## Current Status
 
 - 91 tests passing.
+- Tests run through GitHub Actions CI on push and pull requests.
 - Offline math demo only.
 - Repository remains private for now.
 - Live providers are not implemented yet.
@@ -89,13 +90,11 @@ where `kind` is `model` or `tool`.
 - No live provider integrations yet.
 - No LangChain or LangGraph adapters yet.
 - The example flow currently uses a fake provider and calculator tool.
-- No CI yet.
 - No public release or package publishing yet.
 - The CLI is intentionally plain and line-oriented.
 
 ## Roadmap
 
-- GitHub Actions CI.
 - Stronger README and demo assets.
 - Optional live provider wrappers.
 - LangChain/LangGraph adapter.

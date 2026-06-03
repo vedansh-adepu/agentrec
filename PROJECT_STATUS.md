@@ -14,7 +14,7 @@ agentrec records every model and tool call an AI agent makes, stores the interac
 
 ## Current Status Summary
 
-The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, recorder layer, hermetic replayer layer, tiny offline example math flow, minimal CLI record/replay/show/diff/validate commands, a minimal diff engine, cassette validation safety checks, and a public-facing README/demo document. The codebase can now model, hash, store, call deterministic offline components, record model/tool/final-output events into cassette data, replay cached model/tool responses without live providers, tools, network, or APIs, demonstrate record -> replay through both a Python example API and terminal commands, inspect cassette metadata and trace steps from the terminal, compare two cassette runs from the terminal, validate cassette structure and parseability, and explain the MVP clearly to a new developer.
+The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, recorder layer, hermetic replayer layer, tiny offline example math flow, minimal CLI record/replay/show/diff/validate commands, a minimal diff engine, cassette validation safety checks, a public-facing README/demo document, and a GitHub Actions test workflow. The codebase can now model, hash, store, call deterministic offline components, record model/tool/final-output events into cassette data, replay cached model/tool responses without live providers, tools, network, or APIs, demonstrate record -> replay through both a Python example API and terminal commands, inspect cassette metadata and trace steps from the terminal, compare two cassette runs from the terminal, validate cassette structure and parseability, explain the MVP clearly to a new developer, and run tests automatically on push and pull requests.
 
 The first clean project snapshot has been committed and pushed to a private GitHub repository:
 
@@ -162,6 +162,17 @@ Completed:
 - current guarantees and limitations
 - roadmap and non-goals
 
+### Step 12: GitHub Actions CI
+
+Completed:
+
+- `.github/workflows/tests.yml`
+- push and pull request test workflow
+- Python 3.11 and 3.12 test matrix
+- editable install with test dependencies
+- simple `pytest` run
+- short README CI note
+
 ## Current Test Status
 
 91 tests passing.
@@ -264,7 +275,7 @@ Checks cassette safety without mutating files:
 
 ## Next Planned Step
 
-Step 12: GitHub Actions CI.
+Step 13: final repo polish before making public.
 
 ## Persistent Project Memory
 
@@ -284,20 +295,21 @@ After each completed step, Codex should update:
 
 `ARCHITECTURE_DECISIONS.md` should be updated only when a major design decision is introduced or changed.
 
-## What Step 12 Should Do
+## What Step 13 Should Do
 
-Step 12 should add GitHub Actions CI that:
+Step 13 should do final repo polish before making the repository public:
 
-- runs the test suite on pull requests and pushes
-- uses Python 3.11+
-- installs project test dependencies
-- avoids secrets and live network/API calls beyond dependency installation
-- keeps the workflow minimal and readable
-- preserves offline test behavior
+- inspect repository state
+- review README, project status, and development log
+- confirm CI workflow is present
+- run tests locally
+- check Git status and ignored generated files
+- identify any final gaps before public visibility
+- keep the repo private until explicitly approved for public release
 
-## What Step 12 Must Not Do
+## What Step 13 Must Not Do
 
-Step 12 must not add:
+Step 13 must not add:
 
 - live OpenAI provider
 - live Anthropic provider
@@ -305,7 +317,7 @@ Step 12 must not add:
 - database
 - Docker
 - packaging release
-- public repo visibility change
+- public repo visibility change unless explicitly approved
 
 ## Important Design Guarantees
 
@@ -316,29 +328,31 @@ Step 12 must not add:
 
 ## Latest Step Notes
 
-### Step 11
+### Step 12
 
 Files changed:
 
+- `.github/workflows/tests.yml`
 - `README.md`
 - `PROJECT_STATUS.md`
 - `DEVELOPMENT_LOG.md`
 
 Tests run:
 
-- Not run; documentation-only change.
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
 
 Result:
 
-- README and demo documentation completed.
+- GitHub Actions CI workflow added.
+- 91 tests passed locally.
 - Runtime behavior did not change.
 
 Current status:
 
-- Step 11 README/demo polish completed.
+- Step 12 GitHub Actions CI completed.
 - Project remains fully offline.
-- No source code, tests, pyproject, CI, packaging, GitHub settings, or repo visibility was changed.
+- No source code, tests, pyproject, packaging, GitHub settings, or repo visibility was changed.
 
 Next step:
 
-- Step 12: GitHub Actions CI.
+- Step 13: final repo polish before making public.

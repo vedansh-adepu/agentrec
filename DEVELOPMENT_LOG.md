@@ -425,6 +425,39 @@ This log records the chronological engineering history of agentrec for debugging
 - Next step:
   - Step 12: GitHub Actions CI.
 
+## 2026-06-02 - Step 12: GitHub Actions CI
+
+- Goal:
+  - Add a GitHub Actions workflow that runs the test suite automatically on push and pull requests so the repository is CI-ready before public release.
+- Files changed:
+  - `.github/workflows/tests.yml`
+  - `README.md`
+  - `PROJECT_STATUS.md`
+  - `DEVELOPMENT_LOG.md`
+- Key implementation notes:
+  - Added a `tests` GitHub Actions workflow.
+  - Workflow runs on `push` and `pull_request`.
+  - Workflow uses `ubuntu-latest`.
+  - Workflow tests Python `3.11` and `3.12`.
+  - Workflow uses `actions/checkout@v4` and `actions/setup-python@v5`.
+  - Workflow enables simple pip caching through `actions/setup-python`.
+  - Workflow upgrades pip, installs the package with test dependencies using `python -m pip install -e ".[test]"`, and runs `pytest`.
+  - Added a short README note that tests run through GitHub Actions CI.
+  - No source code, tests, runtime behavior, pyproject configuration, packaging release, GitHub settings, or repo visibility changed.
+- Tests run:
+  - `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
+- Result:
+  - 91 tests passed locally.
+  - GitHub Actions CI workflow is ready to run after push.
+- Bugs/issues found:
+  - None.
+- Decisions made:
+  - Keep CI minimal and readable.
+  - Use a Python 3.11/3.12 matrix before public release.
+  - Do not wait for GitHub Actions until explicitly asked after push.
+- Next step:
+  - Step 13: final repo polish before making public.
+
 ## Future Entry Template
 
 ## YYYY-MM-DD - Step N: <name>
