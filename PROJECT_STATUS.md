@@ -14,7 +14,7 @@ agentrec records every model and tool call an AI agent makes, stores the interac
 
 ## Current Status Summary
 
-The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, recorder layer, hermetic replayer layer, and a tiny offline example math flow. The codebase can now model, hash, store, call deterministic offline components, record model/tool/final-output events into cassette data, replay cached model/tool responses without live providers, tools, network, or APIs, and demonstrate record -> replay through a Python example API.
+The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, recorder layer, hermetic replayer layer, tiny offline example math flow, and minimal CLI record/replay commands. The codebase can now model, hash, store, call deterministic offline components, record model/tool/final-output events into cassette data, replay cached model/tool responses without live providers, tools, network, or APIs, and demonstrate record -> replay through both a Python example API and terminal commands.
 
 The first clean project snapshot has been committed and pushed to a private GitHub repository:
 
@@ -105,9 +105,20 @@ Completed:
 - record/replay summary dictionaries
 - example flow tests
 
+### Step 7: CLI Record/Replay Commands
+
+Completed:
+
+- Typer `agentrec` app
+- `agentrec record --run-path <path> --expression <expr>`
+- `agentrec replay --run-path <path> --expression <expr>`
+- console script entry point
+- replay miss CLI error handling
+- CLI tests
+
 ## Current Test Status
 
-55 tests passing.
+65 tests passing.
 
 Last known command:
 
@@ -168,9 +179,18 @@ Demonstrates the current offline engine through a Python API:
 - verifies final output, model output, and tool output match
 - stays independent of CLI commands
 
+### CLI Layer
+
+Exposes the offline math flow through terminal commands:
+
+- records an offline math cassette
+- replays an offline math cassette
+- prints simple summary output
+- exits non-zero with a clear message on replay misses
+
 ## Next Planned Step
 
-Step 7: CLI record/replay commands.
+Step 8: show command for cassette trace inspection.
 
 ## Persistent Project Memory
 
@@ -190,21 +210,24 @@ After each completed step, Codex should update:
 
 `ARCHITECTURE_DECISIONS.md` should be updated only when a major design decision is introduced or changed.
 
-## What Step 7 Should Do
+## What Step 8 Should Do
 
-Step 7 should add minimal CLI record/replay commands that:
+Step 8 should add a show command that:
 
 - use Typer
-- expose a small record command for the offline math flow
-- expose a small replay command for the offline math flow
+- reads an existing cassette
+- prints run metadata
+- prints trace steps in order
+- keeps output simple and inspectable
 - remain offline and deterministic
-- avoid show/diff/validate commands for now
+- avoids diff and validate commands for now
 
-## What Step 7 Must Not Do
+## What Step 8 Must Not Do
 
-Step 7 must not add:
+Step 8 must not add:
 
 - diff engine
+- validate command
 - live OpenAI provider
 - live Anthropic provider
 - dashboard
@@ -366,3 +389,28 @@ Current status:
 Next step:
 
 - Step 7: CLI record/replay commands.
+
+### Step 7
+
+Files changed:
+
+- `src/agentrec/cli.py`
+- `pyproject.toml`
+- `tests/test_cli.py`
+- `PROJECT_STATUS.md`
+- `DEVELOPMENT_LOG.md`
+
+Tests run:
+
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
+
+Current status:
+
+- Step 7 CLI record/replay commands completed.
+- CLI remains fully offline and delegates to the existing math flow only.
+- Replay misses exit non-zero with a clear message.
+- No show command, diff engine, validate command, live providers, dashboard, database, Docker, GitHub Actions, or packaging release was added.
+
+Next step:
+
+- Step 8: show command for cassette trace inspection.

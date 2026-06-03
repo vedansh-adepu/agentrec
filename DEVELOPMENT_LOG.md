@@ -267,6 +267,37 @@ This log records the chronological engineering history of agentrec for debugging
 - Next step:
   - Step 7: CLI record/replay commands.
 
+## 2026-06-02 - Step 7: CLI Record/Replay Commands
+
+- Goal:
+  - Add minimal Typer-based CLI commands that expose the existing offline math record/replay flow through terminal commands.
+- Files changed:
+  - `src/agentrec/cli.py`
+  - `pyproject.toml`
+  - `tests/test_cli.py`
+  - `PROJECT_STATUS.md`
+  - `DEVELOPMENT_LOG.md`
+- Key implementation notes:
+  - Added a Typer `app`.
+  - Added `record --run-path <path> --expression <expr>`.
+  - Added `replay --run-path <path> --expression <expr>`.
+  - Added the `agentrec = "agentrec.cli:app"` console script entry point.
+  - CLI output prints a clear success message and summary fields.
+  - Replay misses are caught and shown as clear CLI errors with non-zero exit.
+  - Tests verify record/replay command behavior, cassette creation, final output display, replay miss handling, no network calls, and absence of show/diff/validate commands.
+  - No show, diff, or validate commands were added.
+- Tests run:
+  - `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
+- Result:
+  - 65 tests passed.
+- Bugs/issues found:
+  - Local test environment initially lacked Typer; installed declared CLI dependencies into `/private/tmp/agentrec-test-deps` outside the repository.
+- Decisions made:
+  - Keep CLI output simple instead of building Rich tables yet.
+  - Keep CLI scope to offline math record/replay only.
+- Next step:
+  - Step 8: show command for cassette trace inspection.
+
 ## Future Entry Template
 
 ## YYYY-MM-DD - Step N: <name>
