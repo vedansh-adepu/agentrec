@@ -12,6 +12,7 @@ from agentrec.errors import CassetteError, ReplayMissError
 from agentrec.examples import record_math_flow, replay_math_flow
 from agentrec.models import RunRecord, Step
 from agentrec.store import CassetteStore
+from agentrec.validation import validate_cassette
 
 app = typer.Typer(help="Record and replay offline agentrec examples.")
 
@@ -98,6 +99,31 @@ def diff(
         "changed",
     ):
         typer.echo(f"{key}: {summary[key]}")
+
+
+@app.command()
+def validate(
+    run_path: Path = typer.Option(..., "--run-path", help="Cassette path to validate."),
+) -> None:
+    """Validate cassette structure and parseability."""
+
+    summary = validate_cassette(run_path)
+    typer.echo("Cassette validation.")
+    for key in (
+        "ok",
+        "run_path",
+        "run_id",
+        "task",
+        "step_count",
+        "response_file_count",
+        "has_final_output",
+    ):
+        typer.echo(f"{key}: {summary[key]}")
+    if summary["errors"]:
+        typer.echo("errors:")
+        for error in summary["errors"]:
+            typer.echo(f"  {error}")
+        raise typer.Exit(code=1)
 
 
 def _print_summary(summary: dict[str, Any]) -> None:

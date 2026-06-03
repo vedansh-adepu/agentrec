@@ -360,6 +360,41 @@ This log records the chronological engineering history of agentrec for debugging
 - Next step:
   - Step 10: validate command and cassette safety checks.
 
+## 2026-06-02 - Step 10: Validate Command and Cassette Safety Checks
+
+- Goal:
+  - Add a minimal offline cassette validation layer and CLI command that checks whether an existing cassette folder is structurally valid and safe to inspect, replay, and diff.
+- Files changed:
+  - `src/agentrec/validation.py`
+  - `src/agentrec/cli.py`
+  - `tests/test_validation.py`
+  - `tests/test_cli.py`
+  - `PROJECT_STATUS.md`
+  - `DEVELOPMENT_LOG.md`
+- Key implementation notes:
+  - Added `validate_cassette(run_path)`.
+  - Validation checks required cassette structure: cassette path, `metadata.json`, `trace.jsonl`, `responses/`, and `artifacts/`.
+  - Validation parses metadata with `CassetteStore.read_metadata()`.
+  - Validation parses trace steps with `CassetteStore.read_steps()`.
+  - Validation reads `final_output.txt` when present and reports `has_final_output`.
+  - Validation parses each `responses/*.json` file and validates it as a `CachedInteraction`.
+  - Expected validation failures return `ok=False` with error messages instead of raising.
+  - Added `agentrec validate --run-path <path>`.
+  - CLI validation output is plain and line-oriented, and exits `0` for valid cassettes or `1` for invalid cassettes.
+  - Tests verify valid cassettes, missing paths, missing metadata, malformed metadata, malformed trace JSONL, malformed response JSON, read-only validation behavior, no network calls, and CLI validate output/exit codes.
+  - No live provider, dashboard, database, Docker, GitHub Actions, packaging release, or public repo visibility change was added.
+- Tests run:
+  - `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
+- Result:
+  - 91 tests passed.
+- Bugs/issues found:
+  - None.
+- Decisions made:
+  - Keep validation as a read-only report that accumulates errors instead of failing fast.
+  - Keep validation output plain and suitable for terminal inspection.
+- Next step:
+  - Step 11: README/demo polish and public-facing documentation.
+
 ## Future Entry Template
 
 ## YYYY-MM-DD - Step N: <name>

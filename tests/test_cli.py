@@ -178,6 +178,38 @@ def test_diff_on_missing_cassette_exits_nonzero_with_clear_message(tmp_path: Pat
     assert "Cassette error:" in result.output
 
 
+def test_validate_command_exits_zero_for_valid_cassette(tmp_path: Path) -> None:
+    run_path = tmp_path / "math_run"
+    runner.invoke(app, ["record", "--run-path", str(run_path), "--expression", "2+3"])
+
+    result = runner.invoke(app, ["validate", "--run-path", str(run_path)])
+
+    assert result.exit_code == 0
+
+
+def test_validate_output_includes_ok_true(tmp_path: Path) -> None:
+    run_path = tmp_path / "math_run"
+    runner.invoke(app, ["record", "--run-path", str(run_path), "--expression", "2+3"])
+
+    result = runner.invoke(app, ["validate", "--run-path", str(run_path)])
+
+    assert "Cassette validation." in result.output
+    assert "ok: True" in result.output
+
+
+def test_validate_on_missing_cassette_exits_nonzero(tmp_path: Path) -> None:
+    result = runner.invoke(app, ["validate", "--run-path", str(tmp_path / "missing_run")])
+
+    assert result.exit_code == 1
+
+
+def test_validate_on_missing_cassette_outputs_error_text(tmp_path: Path) -> None:
+    result = runner.invoke(app, ["validate", "--run-path", str(tmp_path / "missing_run")])
+
+    assert "ok: False" in result.output
+    assert "Missing cassette path" in result.output
+
+
 def test_cli_commands_introduce_no_live_network_calls(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -207,16 +239,11 @@ def test_cli_commands_introduce_no_live_network_calls(
         app,
         ["diff", "--left", str(run_path), "--right", str(other_run_path)],
     )
+    validate_result = runner.invoke(app, ["validate", "--run-path", str(run_path)])
 
     assert record_result.exit_code == 0
     assert other_record_result.exit_code == 0
     assert replay_result.exit_code == 0
     assert show_result.exit_code == 0
     assert diff_result.exit_code == 0
-
-
-@pytest.mark.parametrize("command", ["validate"])
-def test_cli_does_not_implement_future_commands(command: str) -> None:
-    result = runner.invoke(app, [command])
-
-    assert result.exit_code != 0
+    assert validate_result.exit_code == 0
