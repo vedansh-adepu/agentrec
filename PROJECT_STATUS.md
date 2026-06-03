@@ -14,7 +14,7 @@ agentrec records every model and tool call an AI agent makes, stores the interac
 
 ## Current Status Summary
 
-The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, recorder layer, hermetic replayer layer, tiny offline example math flow, minimal CLI record/replay/show/diff/validate commands, a minimal diff engine, cassette validation safety checks, a public-facing README/demo document, and a GitHub Actions test workflow. The codebase can now model, hash, store, call deterministic offline components, record model/tool/final-output events into cassette data, replay cached model/tool responses without live providers, tools, network, or APIs, demonstrate record -> replay through both a Python example API and terminal commands, inspect cassette metadata and trace steps from the terminal, compare two cassette runs from the terminal, validate cassette structure and parseability, explain the MVP clearly to a new developer, and run tests automatically on push and pull requests.
+The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, recorder layer, hermetic replayer layer, tiny offline example math flow, minimal CLI record/replay/show/diff/validate commands, a minimal diff engine, cassette validation safety checks, a public-facing README/demo document, a GitHub Actions test workflow, and a public release readiness checklist. The codebase can now model, hash, store, call deterministic offline components, record model/tool/final-output events into cassette data, replay cached model/tool responses without live providers, tools, network, or APIs, demonstrate record -> replay through both a Python example API and terminal commands, inspect cassette metadata and trace steps from the terminal, compare two cassette runs from the terminal, validate cassette structure and parseability, explain the MVP clearly to a new developer, and run tests automatically on push and pull requests.
 
 The first clean project snapshot has been committed and pushed to a private GitHub repository:
 
@@ -25,7 +25,7 @@ The first clean project snapshot has been committed and pushed to a private GitH
 - Branch: `main`
 - Final Git status after push: working tree clean
 
-Do not make the repository public until the replayer, CLI, README/demo, and CI are stronger.
+The repository remains private. Do not make it public until the owner explicitly approves the license decision and public visibility change.
 
 The repository now also has persistent production workflow documentation for development history, architecture decisions, quality checks, and production standards.
 
@@ -173,9 +173,21 @@ Completed:
 - simple `pytest` run
 - short README CI note
 
+### Step 13: Final Repo Polish Before Public Release
+
+Completed:
+
+- README clarity pass for public-readiness
+- public release checklist
+- CI status note for Python 3.11 and 3.12
+- private-repo and no-license status clarified
+- next-step documentation for license and visibility decision
+
 ## Current Test Status
 
 91 tests passing.
+
+GitHub Actions CI is green for Python 3.11 and 3.12.
 
 Last known command:
 
@@ -275,7 +287,7 @@ Checks cassette safety without mutating files:
 
 ## Next Planned Step
 
-Step 13: final repo polish before making public.
+Step 14: license decision and public visibility decision.
 
 ## Persistent Project Memory
 
@@ -297,19 +309,17 @@ After each completed step, Codex should update:
 
 ## What Step 13 Should Do
 
-Step 13 should do final repo polish before making the repository public:
+Step 13 completed final repo polish before making the repository public:
 
-- inspect repository state
-- review README, project status, and development log
-- confirm CI workflow is present
-- run tests locally
-- check Git status and ignored generated files
-- identify any final gaps before public visibility
-- keep the repo private until explicitly approved for public release
+- lightly polish README content
+- add a public release checklist
+- document that CI is green for Python 3.11 and 3.12
+- clarify that the repo remains private
+- preserve runtime behavior
 
 ## What Step 13 Must Not Do
 
-Step 13 must not add:
+Step 13 did not add:
 
 - live OpenAI provider
 - live Anthropic provider
@@ -318,6 +328,26 @@ Step 13 must not add:
 - Docker
 - packaging release
 - public repo visibility change unless explicitly approved
+
+## What Step 14 Should Do
+
+Step 14 should decide license and public visibility readiness:
+
+- decide whether to add a license
+- choose license text only after explicit owner approval
+- verify no secrets, `.env` files, or generated private runs are tracked
+- verify CLI demo still works if requested
+- decide whether and when to make the private repository public
+
+## What Step 14 Must Not Do
+
+Step 14 must not:
+
+- change repository visibility without explicit owner approval
+- add a license without explicit owner approval
+- add live providers
+- add packaging release behavior
+- add unrelated runtime behavior
 
 ## Important Design Guarantees
 
@@ -328,31 +358,34 @@ Step 13 must not add:
 
 ## Latest Step Notes
 
-### Step 12
+### Step 13
 
 Files changed:
 
-- `.github/workflows/tests.yml`
 - `README.md`
+- `PUBLIC_RELEASE_CHECKLIST.md`
 - `PROJECT_STATUS.md`
 - `DEVELOPMENT_LOG.md`
 
 Tests run:
 
-- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/agentrec-test-deps python -m pytest -p no:cacheprovider`
+- Not run; documentation-only change.
 
 Result:
 
-- GitHub Actions CI workflow added.
-- 91 tests passed locally.
+- Final repo polish completed before public release decision.
+- Public release checklist added.
+- README now notes CI is green for Python 3.11 and 3.12.
 - Runtime behavior did not change.
 
 Current status:
 
-- Step 12 GitHub Actions CI completed.
+- Step 13 final repo polish completed.
+- CI is green for Python 3.11 and 3.12.
+- Repository remains private.
 - Project remains fully offline.
-- No source code, tests, pyproject, packaging, GitHub settings, or repo visibility was changed.
+- No source code, tests, pyproject, CI workflow, packaging, GitHub settings, repo visibility, or license files were changed.
 
 Next step:
 
-- Step 13: final repo polish before making public.
+- Step 14: license decision and public visibility decision.

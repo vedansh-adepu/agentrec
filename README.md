@@ -12,12 +12,11 @@ agentrec makes agent runs reproducible by recording the important interactions i
 
 The current MVP supports this offline workflow:
 
-- record model and tool calls
-- save them into cassette files
-- replay from cassette without live calls
-- inspect the trace
-- diff two runs
-- validate cassette health
+- `record`: run the offline example once and save model/tool interactions into a cassette.
+- `replay`: serve the same model/tool responses from cassette data without live calls.
+- `show`: inspect run metadata and ordered trace steps.
+- `diff`: compare two cassette runs by final output, step count, step sequence, latency, and cost totals.
+- `validate`: check cassette structure and parseability before inspection, replay, or diffing.
 
 ## Current Demo
 
@@ -46,6 +45,10 @@ source .venv/bin/activate
 pip install -e ".[test]"
 pytest
 ```
+
+## CI
+
+Tests pass on GitHub Actions for Python 3.11 and 3.12.
 
 ## Cassette Format
 
@@ -79,11 +82,12 @@ where `kind` is `model` or `tool`.
 ## Current Status
 
 - 91 tests passing.
-- Tests run through GitHub Actions CI on push and pull requests.
+- Tests pass through GitHub Actions CI on Python 3.11 and 3.12.
 - Offline math demo only.
 - Repository remains private for now.
 - Live providers are not implemented yet.
 - CLI commands currently available: `record`, `replay`, `show`, `diff`, and `validate`.
+- No license has been added yet.
 
 ## Limitations
 
@@ -95,7 +99,9 @@ where `kind` is `model` or `tool`.
 
 ## Roadmap
 
-- Stronger README and demo assets.
+- License decision before public visibility.
+- Optional README badge.
+- Richer demo screenshots or terminal captures.
 - Optional live provider wrappers.
 - LangChain/LangGraph adapter.
 - Richer diff output.

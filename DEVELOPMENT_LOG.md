@@ -458,6 +458,34 @@ This log records the chronological engineering history of agentrec for debugging
 - Next step:
   - Step 13: final repo polish before making public.
 
+## 2026-06-02 - Step 13: Final Repo Polish Before Public Release
+
+- Goal:
+  - Polish repository documentation for public readiness after CI passed, while keeping the repository private and changing no runtime behavior.
+- Files changed:
+  - `README.md`
+  - `PUBLIC_RELEASE_CHECKLIST.md`
+  - `PROJECT_STATUS.md`
+  - `DEVELOPMENT_LOG.md`
+- Key implementation notes:
+  - Lightly improved README wording around record, replay, show, diff, and validate.
+  - Added a CI note that tests pass on GitHub Actions for Python 3.11 and 3.12.
+  - Added a public release checklist covering CI, README accuracy, secrets, generated private runs, CLI demo, limitations, license decision, and owner approval for visibility changes.
+  - Updated project status to mark Step 13 complete, keep the repo private, and set Step 14 as the license and public visibility decision.
+  - No source code, tests, pyproject configuration, CI workflow, runtime behavior, packaging, GitHub settings, repository visibility, or license files changed.
+- Tests run:
+  - Not run; documentation-only change.
+- Result:
+  - Final documentation polish is in place before any public visibility decision.
+  - Repository remains private.
+- Bugs/issues found:
+  - None.
+- Decisions made:
+  - Keep public release readiness gated by explicit owner approval.
+  - Do not add a license until the owner explicitly approves the license decision.
+- Next step:
+  - Step 14: license decision and public visibility decision.
+
 ## Future Entry Template
 
 ## YYYY-MM-DD - Step N: <name>
