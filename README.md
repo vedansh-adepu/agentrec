@@ -87,7 +87,7 @@ where `kind` is `model` or `tool`.
 - Repository remains private for now.
 - Live providers are not implemented yet.
 - CLI commands currently available: `record`, `replay`, `show`, `diff`, and `validate`.
-- No license has been added yet.
+- Licensed under the MIT License.
 
 ## Limitations
 
@@ -99,7 +99,7 @@ where `kind` is `model` or `tool`.
 
 ## Roadmap
 
-- License decision before public visibility.
+- Final public visibility approval.
 - Optional README badge.
 - Richer demo screenshots or terminal captures.
 - Optional live provider wrappers.
@@ -120,3 +120,7 @@ where `kind` is `model` or `tool`.
 ## Development Notes
 
 Generated private runs should not be committed. The repository ignores `runs/`, `.env` files, virtual environments, caches, and common editor/OS files.
+
+## License
+
+agentrec is licensed under the MIT License. See `LICENSE` for details.

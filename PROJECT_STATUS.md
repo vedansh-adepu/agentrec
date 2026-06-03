@@ -14,7 +14,7 @@ agentrec records every model and tool call an AI agent makes, stores the interac
 
 ## Current Status Summary
 
-The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, recorder layer, hermetic replayer layer, tiny offline example math flow, minimal CLI record/replay/show/diff/validate commands, a minimal diff engine, cassette validation safety checks, a public-facing README/demo document, a GitHub Actions test workflow, and a public release readiness checklist. The codebase can now model, hash, store, call deterministic offline components, record model/tool/final-output events into cassette data, replay cached model/tool responses without live providers, tools, network, or APIs, demonstrate record -> replay through both a Python example API and terminal commands, inspect cassette metadata and trace steps from the terminal, compare two cassette runs from the terminal, validate cassette structure and parseability, explain the MVP clearly to a new developer, and run tests automatically on push and pull requests.
+The project has its foundational data models, request fingerprinting layer, local filesystem cassette store, fully offline fake provider/tool layer, recorder layer, hermetic replayer layer, tiny offline example math flow, minimal CLI record/replay/show/diff/validate commands, a minimal diff engine, cassette validation safety checks, a public-facing README/demo document, a GitHub Actions test workflow, a public release readiness checklist, and an MIT license. The codebase can now model, hash, store, call deterministic offline components, record model/tool/final-output events into cassette data, replay cached model/tool responses without live providers, tools, network, or APIs, demonstrate record -> replay through both a Python example API and terminal commands, inspect cassette metadata and trace steps from the terminal, compare two cassette runs from the terminal, validate cassette structure and parseability, explain the MVP clearly to a new developer, and run tests automatically on push and pull requests.
 
 The first clean project snapshot has been committed and pushed to a private GitHub repository:
 
@@ -25,7 +25,7 @@ The first clean project snapshot has been committed and pushed to a private GitH
 - Branch: `main`
 - Final Git status after push: working tree clean
 
-The repository remains private. Do not make it public until the owner explicitly approves the license decision and public visibility change.
+The repository remains private. The MIT license has been added, but do not make the repository public until the owner explicitly approves the final public visibility change.
 
 The repository now also has persistent production workflow documentation for development history, architecture decisions, quality checks, and production standards.
 
@@ -183,6 +183,16 @@ Completed:
 - private-repo and no-license status clarified
 - next-step documentation for license and visibility decision
 
+### Step 14A: MIT License
+
+Completed:
+
+- standard MIT `LICENSE`
+- README license section
+- public release checklist license decision update
+- project status and development log update
+- repository remains private
+
 ## Current Test Status
 
 91 tests passing.
@@ -287,7 +297,7 @@ Checks cassette safety without mutating files:
 
 ## Next Planned Step
 
-Step 14: license decision and public visibility decision.
+Step 14B: final public visibility check.
 
 ## Persistent Project Memory
 
@@ -329,22 +339,30 @@ Step 13 did not add:
 - packaging release
 - public repo visibility change unless explicitly approved
 
-## What Step 14 Should Do
+## What Step 14A Did
 
-Step 14 should decide license and public visibility readiness:
+Step 14A added the MIT license only:
 
-- decide whether to add a license
-- choose license text only after explicit owner approval
+- created `LICENSE`
+- documented MIT license in `README.md`
+- marked the license decision complete in `PUBLIC_RELEASE_CHECKLIST.md`
+- kept repository visibility private
+- preserved runtime behavior
+
+## What Step 14B Should Do
+
+Step 14B should do the final public visibility check:
+
 - verify no secrets, `.env` files, or generated private runs are tracked
 - verify CLI demo still works if requested
+- verify GitHub Actions CI status if requested
 - decide whether and when to make the private repository public
 
-## What Step 14 Must Not Do
+## What Step 14B Must Not Do
 
-Step 14 must not:
+Step 14B must not:
 
 - change repository visibility without explicit owner approval
-- add a license without explicit owner approval
 - add live providers
 - add packaging release behavior
 - add unrelated runtime behavior
@@ -358,10 +376,11 @@ Step 14 must not:
 
 ## Latest Step Notes
 
-### Step 13
+### Step 14A
 
 Files changed:
 
+- `LICENSE`
 - `README.md`
 - `PUBLIC_RELEASE_CHECKLIST.md`
 - `PROJECT_STATUS.md`
@@ -373,19 +392,19 @@ Tests run:
 
 Result:
 
-- Final repo polish completed before public release decision.
-- Public release checklist added.
-- README now notes CI is green for Python 3.11 and 3.12.
+- MIT license added.
+- README license section added.
+- Public release checklist now marks the license decision complete.
 - Runtime behavior did not change.
 
 Current status:
 
-- Step 13 final repo polish completed.
+- Step 14A MIT license completed.
 - CI is green for Python 3.11 and 3.12.
 - Repository remains private.
 - Project remains fully offline.
-- No source code, tests, pyproject, CI workflow, packaging, GitHub settings, repo visibility, or license files were changed.
+- No source code, tests, pyproject, CI workflow, packaging, GitHub settings, or repo visibility was changed.
 
 Next step:
 
-- Step 14: license decision and public visibility decision.
+- Step 14B: final public visibility check.

@@ -486,6 +486,35 @@ This log records the chronological engineering history of agentrec for debugging
 - Next step:
   - Step 14: license decision and public visibility decision.
 
+## 2026-06-02 - Step 14A: MIT License
+
+- Goal:
+  - Add a standard MIT license before making the repository public, without changing repository visibility or runtime behavior.
+- Files changed:
+  - `LICENSE`
+  - `README.md`
+  - `PUBLIC_RELEASE_CHECKLIST.md`
+  - `PROJECT_STATUS.md`
+  - `DEVELOPMENT_LOG.md`
+- Key implementation notes:
+  - Added the standard MIT License text with `Copyright (c) 2026 Vedansh Adepu`.
+  - Added a short README license section.
+  - Updated the public release checklist to mark the MIT license decision and `LICENSE` file as complete.
+  - Updated project status to note that the MIT license is added and the repository remains private.
+  - No source code, tests, CI workflow, pyproject configuration, package behavior, GitHub settings, or repository visibility changed.
+- Tests run:
+  - Not run; documentation/license-only change.
+- Result:
+  - MIT license is in place.
+  - Repository remains private.
+- Bugs/issues found:
+  - None.
+- Decisions made:
+  - Use the MIT License for agentrec.
+  - Keep public visibility as a separate owner-approved step.
+- Next step:
+  - Step 14B: final public visibility check.
+
 ## Future Entry Template
 
 ## YYYY-MM-DD - Step N: <name>
