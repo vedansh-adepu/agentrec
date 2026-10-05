@@ -1,327 +1,228 @@
-"""Command line interface for agentrec."""
+"""Command-line inspection and maintenance for schema-v2 cassettes."""
 
 from __future__ import annotations
 
 import json
-import shutil
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
 import typer
 
-from agentrec.diff import diff_cassettes, diff_v2_cassettes
-from agentrec.errors import CassetteError, ReplayMissError
-from agentrec.examples import record_math_flow, replay_math_flow
-from agentrec.models import RunRecord, Step
-from agentrec.store import CassetteStore
-from agentrec.validation import validate_cassette, validate_v2_cassette
+from . import __version__
+from .cassette.replay import ReplayIndex
+from .cassette.store import CassetteStore
+from .diff import diff_v2_cassettes
+from .matching import MatchPolicy
+from .redaction import scrub as scrub_cassette
+from .validation import ValidationLevel, validate_v2_cassette
 
-app = typer.Typer(help="Record and replay offline agentrec examples.")
+app = typer.Typer(
+    help="Inspect and validate deterministic AI-agent cassettes.",
+    invoke_without_command=True,
+)
+
+
+def _fail(ctx: typer.Context, exc: Exception, *, code: int) -> None:
+    if ctx.obj and ctx.obj.get("debug"):
+        raise exc
+    typer.echo(f"error: {exc}", err=True)
+    raise typer.Exit(code=code) from exc
+
+
+def _json(data: dict[str, Any]) -> None:
+    typer.echo(json.dumps(data, indent=2, sort_keys=True))
+
+
+@app.callback()
+def main(
+    ctx: typer.Context,
+    debug: Annotated[
+        bool, typer.Option("--debug", help="Show error traceback.")
+    ] = False,
+    version: Annotated[
+        bool, typer.Option("--version", is_eager=True, help="Print version and exit.")
+    ] = False,
+) -> None:
+    """Configure CLI error display and global version output."""
+    ctx.obj = {"debug": debug}
+    if version:
+        typer.echo(__version__)
+        raise typer.Exit()
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+        raise typer.Exit(code=2)
 
 
 @app.command()
-def record(
-    run_path: Path = typer.Option(
-        ..., "--run-path", help="Path to write the cassette."
-    ),
-    expression: str = typer.Option(
-        "2+3", "--expression", help="Math expression to record."
-    ),
-    force: bool = typer.Option(
-        False,
-        "--force",
-        help="Overwrite an existing cassette directory.",
-    ),
-) -> None:
-    """Record the offline math flow."""
-
-    _prepare_record_path(run_path, force)
-    summary = record_math_flow(run_path, expression)
-    typer.echo("Recorded math flow.")
-    _print_summary(summary)
-
-
-@app.command()
-def replay(
-    run_path: Path = typer.Option(..., "--run-path", help="Path to read the cassette."),
-    expression: str = typer.Option(
-        "2+3", "--expression", help="Math expression to replay."
-    ),
-) -> None:
-    """Replay the offline math flow."""
-
-    try:
-        summary = replay_math_flow(run_path, expression)
-    except ReplayMissError as exc:
-        typer.secho(f"Replay miss: {exc}", err=True, fg=typer.colors.RED)
-        raise typer.Exit(code=1) from exc
-
-    typer.echo("Replayed math flow.")
-    _print_summary(summary)
+def version() -> None:
+    """Print the installed agentrec version."""
+    typer.echo(__version__)
 
 
 @app.command()
 def show(
-    run_path: Path = typer.Option(..., "--run-path", help="Path to inspect."),
-    json_output: bool = typer.Option(False, "--json", help="Print JSON output."),
+    ctx: typer.Context,
+    cassette: Annotated[Path, typer.Argument(help="Cassette directory.")],
+    json_output: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = False,
 ) -> None:
-    """Show cassette metadata and trace steps."""
-
-    if (run_path / "cassette.json").exists() or (
-        run_path / "interactions.jsonl"
-    ).exists():
-        summary = validate_v2_cassette(run_path, level="structural")
-        if not summary["ok"]:
-            typer.secho(
-                "Cassette error: " + "; ".join(summary["errors"]),
-                err=True,
-                fg=typer.colors.RED,
-            )
-            raise typer.Exit(code=1)
-        from agentrec.cassette.store import CassetteStore as V2CassetteStore
-
-        metadata, interactions = V2CassetteStore(run_path).load()
-        if json_output:
-            _print_json(
-                {
-                    "cassette": metadata.model_dump(mode="json"),
-                    "interaction_count": len(interactions),
-                    "interactions": [
-                        item.model_dump(mode="json") for item in interactions
-                    ],
-                }
-            )
-        else:
-            typer.echo(f"Cassette schema v2: {len(interactions)} interactions")
-        return
-
-    store = CassetteStore(run_path)
+    """Show schema-v2 metadata and ordered interactions."""
     try:
-        store.validate()
-        run = store.read_metadata()
-        steps = store.read_steps()
-    except CassetteError as exc:
-        typer.secho(f"Cassette error: {exc}", err=True, fg=typer.colors.RED)
-        raise typer.Exit(code=1) from exc
-    except ValueError as exc:
-        typer.secho(
-            f"Cassette error: malformed cassette: {exc}", err=True, fg=typer.colors.RED
-        )
-        raise typer.Exit(code=1) from exc
-
+        result = validate_v2_cassette(cassette, level=ValidationLevel.STRUCTURAL)
+        if not result["ok"]:
+            raise ValueError("; ".join(result["errors"]))
+        metadata, interactions = CassetteStore(cassette).load()
+    except Exception as exc:
+        _fail(ctx, exc, code=2)
     if json_output:
-        _print_json(
+        _json(
             {
-                "run": run.model_dump(mode="json"),
-                "step_count": len(steps),
-                "steps": [step.model_dump(mode="json") for step in steps],
-            },
+                "cassette": metadata.model_dump(mode="json"),
+                "interaction_count": len(interactions),
+                "interactions": [item.model_dump(mode="json") for item in interactions],
+            }
         )
         return
-
-    typer.echo("Cassette run.")
-    _print_run(run, len(steps))
-    typer.echo("steps:")
-    for step in steps:
-        _print_step(step)
+    typer.echo(f"schema_version: {metadata.schema_version}")
+    typer.echo(f"status: {metadata.status}")
+    typer.echo(f"interactions: {len(interactions)}")
+    for item in interactions:
+        name = (
+            item.request["name"]
+            if item.kind == "tool"
+            else f"{item.request['method']} {item.request['url']}"
+        )
+        outcome = "error" if item.error else "response"
+        typer.echo(
+            f"{item.seq}: {item.kind} {name} occurrence={item.occurrence} {outcome}"
+        )
 
 
 @app.command()
 def diff(
-    left: Path = typer.Option(..., "--left", help="Left cassette path."),
-    right: Path = typer.Option(..., "--right", help="Right cassette path."),
-    json_output: bool = typer.Option(False, "--json", help="Print JSON output."),
-    fail_on_change: bool = typer.Option(False, "--fail-on-change"),
+    ctx: typer.Context,
+    left: Annotated[Path, typer.Argument(help="First cassette.")],
+    right: Annotated[Path, typer.Argument(help="Second cassette.")],
+    json_output: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = False,
+    fail_on_change: Annotated[
+        bool, typer.Option("--fail-on-change", help="Exit 1 if behavior changed.")
+    ] = False,
 ) -> None:
-    """Diff two cassette runs."""
-
-    if (left / "cassette.json").exists() or (right / "cassette.json").exists():
-        try:
-            summary = diff_v2_cassettes(left, right)
-        except Exception as exc:
-            typer.secho(f"error: {exc}", err=True, fg=typer.colors.RED)
-            raise typer.Exit(code=1) from exc
-        if json_output:
-            _print_json(summary)
-        else:
-            typer.echo(
-                f"steps: {summary['steps']}, added: {summary['added']}, "
-                f"removed: {summary['removed']}, changed: {summary['changed']}"
-            )
-            typer.echo(f"duration_delta_ms: {summary['duration_delta_ms']}")
-            for detail in summary["details"]:
-                typer.echo(
-                    f"{detail['change']}: "
-                    f"{detail.get('left_seq')} -> {detail.get('right_seq')}"
-                )
-                for field in ("request_paths", "response_paths", "error_paths"):
-                    for difference in detail.get(field, []):
-                        typer.echo(
-                            f"  {field} {difference['path']}: "
-                            f"{difference['left']} -> {difference['right']}"
-                        )
-        if fail_on_change and summary["behavior_changed"]:
-            raise typer.Exit(code=1)
-        return
-
+    """Compare every schema-v2 request, response, error, and trajectory step."""
     try:
-        summary = diff_cassettes(left, right)
-    except CassetteError as exc:
-        typer.secho(f"Cassette error: {exc}", err=True, fg=typer.colors.RED)
-        raise typer.Exit(code=1) from exc
-    except ValueError as exc:
-        typer.secho(
-            f"Cassette error: malformed cassette: {exc}", err=True, fg=typer.colors.RED
-        )
-        raise typer.Exit(code=1) from exc
-
+        result = diff_v2_cassettes(left, right)
+    except Exception as exc:
+        _fail(ctx, exc, code=2)
     if json_output:
-        _print_json(summary)
-        return
-
-    typer.echo("Cassette diff.")
-    for key in (
-        "left_run_id",
-        "right_run_id",
-        "final_output_changed",
-        "step_count_changed",
-        "step_sequence_changed",
-        "latency_delta_ms",
-        "cost_delta_usd",
-        "changed",
-    ):
-        typer.echo(f"{key}: {summary[key]}")
+        _json(result)
+    else:
+        typer.echo(
+            f"steps: {result['steps']}, added: {result['added']}, "
+            f"removed: {result['removed']}, changed: {result['changed']}"
+        )
+        typer.echo(f"duration_delta_ms: {result['duration_delta_ms']}")
+        for detail in result["details"]:
+            typer.echo(
+                f"{detail['change']}: "
+                f"{detail.get('left_seq')} -> {detail.get('right_seq')}"
+            )
+            for field in ("request_paths", "response_paths", "error_paths"):
+                for difference in detail.get(field, []):
+                    typer.echo(
+                        f"  {field} {difference['path']}: "
+                        f"{difference['left']} -> {difference['right']}"
+                    )
+    if fail_on_change and result["behavior_changed"]:
+        raise typer.Exit(code=1)
 
 
 @app.command()
 def validate(
-    run_path: Path = typer.Option(..., "--run-path", help="Cassette path to validate."),
-    json_output: bool = typer.Option(False, "--json", help="Print JSON output."),
-    level: str = typer.Option("privacy", "--level", help="Schema-v2 validation level."),
-    allow_failed: bool = typer.Option(False, "--allow-failed"),
+    ctx: typer.Context,
+    cassette: Annotated[Path, typer.Argument(help="Cassette directory.")],
+    level: Annotated[
+        str, typer.Option("--level", help="Validation level.")
+    ] = "privacy",
+    privacy: Annotated[
+        bool, typer.Option("--privacy", help="Include privacy checks.")
+    ] = False,
+    allow_failed: Annotated[
+        bool, typer.Option("--allow-failed", help="Accept failed recordings.")
+    ] = False,
+    json_output: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = False,
 ) -> None:
-    """Validate cassette structure and parseability."""
-
-    if (run_path / "cassette.json").exists() or (
-        run_path / "interactions.jsonl"
-    ).exists():
-        try:
-            summary = validate_v2_cassette(
-                run_path, level=level, allow_failed=allow_failed
-            )
-        except ValueError as exc:
-            typer.secho(f"error: {exc}", err=True, fg=typer.colors.RED)
-            raise typer.Exit(code=2) from exc
-        if json_output:
-            _print_json(summary)
-        else:
-            typer.echo(f"ok: {summary['ok']}")
-            typer.echo(f"level: {summary['level']}")
-            typer.echo(f"interaction_count: {summary['interaction_count']}")
-            for warning in summary["warnings"]:
-                typer.echo(f"warning: {warning}")
-            for error in summary["errors"]:
-                typer.echo(f"error: {error}")
-        if not summary["ok"]:
-            raise typer.Exit(code=1)
-        return
-
-    summary = validate_cassette(run_path)
-    if json_output:
-        _print_json(summary)
-        if summary["errors"]:
-            raise typer.Exit(code=1)
-        return
-
-    typer.echo("Cassette validation.")
-    for key in (
-        "ok",
-        "run_path",
-        "run_id",
-        "task",
-        "schema_version",
-        "step_count",
-        "response_file_count",
-        "has_final_output",
-    ):
-        typer.echo(f"{key}: {summary[key]}")
-    if summary["errors"]:
-        typer.echo("errors:")
-        for error in summary["errors"]:
-            typer.echo(f"  {error}")
-        raise typer.Exit(code=1)
-
-
-def _prepare_record_path(run_path: Path, force: bool) -> None:
-    if not run_path.exists():
-        return
-
-    if run_path.is_dir() and not any(run_path.iterdir()):
-        return
-
-    if not force:
-        typer.secho(
-            f"Record path already exists and is not empty: {run_path}. "
-            "Use --force to overwrite it.",
-            err=True,
-            fg=typer.colors.RED,
+    """Check structural, integrity, replayability, and privacy guarantees."""
+    try:
+        selected = ValidationLevel.PRIVACY if privacy else ValidationLevel(level)
+        result = validate_v2_cassette(
+            cassette, level=selected, allow_failed=allow_failed
         )
+    except Exception as exc:
+        _fail(ctx, exc, code=2)
+    if json_output:
+        _json(result)
+    elif not result["ok"]:
+        typer.echo("error: " + "; ".join(result["errors"]), err=True)
+    else:
+        typer.echo(f"ok: {result['ok']}")
+        typer.echo(f"level: {result['level']}")
+        typer.echo(f"interaction_count: {result['interaction_count']}")
+        for warning in result["warnings"]:
+            typer.echo(f"warning: {warning}")
+    if not result["ok"]:
         raise typer.Exit(code=1)
 
-    if run_path.is_dir():
-        if (run_path / ".git").exists():
-            typer.secho(
-                f"Refusing to overwrite directory that contains .git: {run_path}",
-                err=True,
-                fg=typer.colors.RED,
+
+@app.command()
+def scrub(
+    ctx: typer.Context,
+    cassette: Annotated[Path, typer.Argument(help="Owned cassette directory.")],
+) -> None:
+    """Reapply current redaction rules to an owned cassette atomically."""
+    try:
+        changed = scrub_cassette(cassette)
+    except Exception as exc:
+        _fail(ctx, exc, code=2)
+    typer.echo(f"scrubbed interactions: {changed}")
+
+
+@app.command("inspect-miss")
+def inspect_miss(
+    ctx: typer.Context,
+    cassette: Annotated[Path, typer.Argument(help="Cassette directory.")],
+    request_json: Annotated[Path, typer.Argument(help="JSON request file.")],
+) -> None:
+    """Explain whether a JSON HTTP or tool request matches a recorded key."""
+    try:
+        validation = validate_v2_cassette(cassette, level="integrity")
+        if not validation["ok"]:
+            raise ValueError("; ".join(validation["errors"]))
+        metadata, interactions = CassetteStore(cassette).load()
+        request = json.loads(request_json.read_text(encoding="utf-8"))
+        if not isinstance(request, dict):
+            raise ValueError("request JSON must be an object")
+        config = metadata.match_policy.config
+        policy = MatchPolicy(
+            name=metadata.match_policy.name,
+            version=metadata.match_policy.version,
+            ignore_body_paths=tuple(config.get("ignore_body_paths", [])),
+            ignore_query=tuple(config.get("ignore_query", [])),
+            match_headers=tuple(config.get("match_headers", [])),
+        )
+        kind = request.get("kind")
+        if kind == "tool":
+            key = policy.tool_key(request["name"], request["arguments"])
+        elif kind == "http":
+            key = policy.http_key(
+                request["method"],
+                request["url"],
+                request.get("body"),
+                request.get("headers", {}),
             )
-            raise typer.Exit(code=1)
-        shutil.rmtree(run_path)
-        return
-
-    if run_path.is_file():
-        run_path.unlink()
-        return
-
-    typer.secho(
-        f"Cannot overwrite unsupported path type: {run_path}",
-        err=True,
-        fg=typer.colors.RED,
+        else:
+            raise ValueError("request kind must be 'http' or 'tool'")
+        played = ReplayIndex(interactions).play(key, request)
+    except Exception as exc:
+        _fail(ctx, exc, code=1 if "replay" in type(exc).__name__.lower() else 2)
+    typer.echo(
+        f"match: seq={played.seq} occurrence={played.occurrence} key={played.key}"
     )
-    raise typer.Exit(code=1)
-
-
-def _print_json(data: dict[str, Any]) -> None:
-    typer.echo(json.dumps(data, indent=2, sort_keys=True))
-
-
-def _print_summary(summary: dict[str, Any]) -> None:
-    for key in (
-        "mode",
-        "expression",
-        "model_output",
-        "tool_output",
-        "final_output",
-        "step_count",
-    ):
-        typer.echo(f"{key}: {summary[key]}")
-
-
-def _print_run(run: RunRecord, step_count: int) -> None:
-    typer.echo(f"run_id: {run.run_id}")
-    typer.echo(f"task: {run.task}")
-    typer.echo(f"final_output: {run.final_output}")
-    typer.echo(f"step_count: {step_count}")
-
-
-def _print_step(step: Step) -> None:
-    parts = [
-        f"index: {step.index}",
-        f"kind: {step.kind}",
-        f"name: {step.name}",
-    ]
-    if step.request_hash is not None:
-        parts.append(f"request_hash: {step.request_hash}")
-    if step.latency_ms is not None:
-        parts.append(f"latency_ms: {step.latency_ms}")
-    typer.echo("  " + " | ".join(parts))

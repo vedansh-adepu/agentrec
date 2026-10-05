@@ -163,16 +163,14 @@ def test_v2_cli_validate_and_show_use_validation(tmp_path: Path) -> None:
     runner = CliRunner()
     path = tmp_path / "cli"
     record_tool(path)
-    valid = runner.invoke(app, ["validate", "--run-path", str(path), "--json"])
+    valid = runner.invoke(app, ["validate", str(path), "--json"])
     assert valid.exit_code == 0
     assert json.loads(valid.output)["ok"]
-    shown = runner.invoke(app, ["show", "--run-path", str(path), "--json"])
+    shown = runner.invoke(app, ["show", str(path), "--json"])
     assert shown.exit_code == 0
     assert json.loads(shown.output)["interaction_count"] == 1
     mutate_interaction(path, lambda entry: entry.update(seq=3), fix_digest=True)
-    invalid = runner.invoke(
-        app, ["validate", "--run-path", str(path), "--level", "structural"]
-    )
+    invalid = runner.invoke(app, ["validate", str(path), "--level", "structural"])
     assert invalid.exit_code == 1
-    hidden = runner.invoke(app, ["show", "--run-path", str(path)])
-    assert hidden.exit_code == 1
+    hidden = runner.invoke(app, ["show", str(path)])
+    assert hidden.exit_code == 2

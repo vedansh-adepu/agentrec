@@ -90,9 +90,7 @@ def test_cli_json_and_fail_on_change(tmp_path: Path) -> None:
         app,
         [
             "diff",
-            "--left",
             str(left),
-            "--right",
             str(right),
             "--json",
             "--fail-on-change",
@@ -107,8 +105,6 @@ def test_cli_refuses_structurally_invalid_v2_cassette(tmp_path: Path) -> None:
     record(left, "prompt", "answer")
     record(right, "prompt", "answer")
     (right / "interactions.jsonl").write_text("not json\n")
-    result = CliRunner().invoke(
-        app, ["diff", "--left", str(left), "--right", str(right)]
-    )
-    assert result.exit_code == 1
+    result = CliRunner().invoke(app, ["diff", str(left), str(right)])
+    assert result.exit_code == 2
     assert "error:" in result.output
