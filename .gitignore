@@ -30,3 +30,11 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Build and static-analysis artifacts
+dist/
+build/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
