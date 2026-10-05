@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import copy
 import hashlib
 import json
@@ -18,6 +19,7 @@ from .cassette.store import CassetteOwnershipError, CassetteStore
 from .errors import ReplayExhaustedError, ReplayMissError
 from .matching import MatchPolicy
 from .modes import RecordMode, resolve_mode
+from .redaction import REDACTION_POLICY_VERSION, Redactor
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -37,12 +39,14 @@ class Session:
         allow_playback_repeats: bool = False,
         allow_failed: bool = False,
         allow_policy_mismatch: bool = False,
+        redactor: Redactor | None = None,
     ) -> None:
         """Open a path under one mode and validate existing cassette integrity."""
         self.path = Path(path)
         self.mode = resolve_mode(mode)
         self.match_policy = match_policy or MatchPolicy()
         self.store = CassetteStore(self.path)
+        self.redactor = redactor or Redactor()
         self._lock = threading.RLock()
         self._started = datetime.now(UTC)
         self._closed = False
@@ -103,6 +107,23 @@ class Session:
                     return None
                 raise
 
+    def _key_inputs_changed(self, kind: str, key: str, request: dict[str, Any]) -> bool:
+        if kind == "tool":
+            return (
+                self.match_policy.tool_key(request["name"], request["arguments"]) != key
+            )
+        body = request.get("body", "")
+        if request.get("body_encoding") == "base64":
+            raw = base64.b64decode(body)
+        else:
+            raw = str(body).encode("utf-8")
+        return (
+            self.match_policy.http_key(
+                request["method"], request["url"], raw, request.get("headers", {})
+            )
+            != key
+        )
+
     def _append(
         self,
         kind: Literal["http", "tool"],
@@ -116,15 +137,31 @@ class Session:
         with self._lock:
             if self._closed:
                 raise RuntimeError("session is closed")
+            stored_request = self.redactor.redact_request(
+                copy.deepcopy(request), kind=kind
+            )
+            stored_response = (
+                self.redactor.redact_response(copy.deepcopy(response), kind=kind)
+                if response is not None
+                else None
+            )
+            stored_error = (
+                ErrorRecord(
+                    type=error.type,
+                    message=self.redactor.redact_text(error.message),
+                )
+                if error is not None
+                else None
+            )
             item = Interaction(
                 seq=len(self._existing) + len(self._new),
                 kind=kind,
                 key=key,
                 occurrence=self._occurrences[key],
-                key_inputs_redacted=False,
-                request=copy.deepcopy(request),
-                response=copy.deepcopy(response),
-                error=error,
+                key_inputs_redacted=self._key_inputs_changed(kind, key, stored_request),
+                request=stored_request,
+                response=stored_response,
+                error=stored_error,
                 started_at=started_at,
                 duration_ms=duration_ms,
             )
@@ -181,7 +218,7 @@ class Session:
                     match_policy=PolicyRecord.model_validate(
                         self.match_policy.as_dict()
                     ),
-                    redaction_policy_version=1,
+                    redaction_policy_version=REDACTION_POLICY_VERSION,
                     status="failed" if error else "complete",
                     created_at=self._metadata.created_at
                     if self._metadata
@@ -190,7 +227,10 @@ class Session:
                     interaction_count=len(interactions),
                     content_sha256=hashlib.sha256(data).hexdigest(),
                     error=(
-                        ErrorRecord(type=type(error).__name__, message=str(error))
+                        ErrorRecord(
+                            type=type(error).__name__,
+                            message=self.redactor.redact_text(str(error)),
+                        )
                         if error
                         else None
                     ),
