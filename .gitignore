@@ -38,3 +38,9 @@ build/
 .mypy_cache/
 .ruff_cache/
 .hypothesis/
+
+# Documentation and mutation outputs
+site/
+mutants/
+*.sarif
+.wheel-venv/

@@ -14,3 +14,15 @@ The mode precedence is the CLI option, then `AGENTREC_MODE`, then the default.
 The default is `none` when `CI` is set and `once` otherwise. A replay miss
 never reaches the fake or live upstream. Keep private cassettes out of Git and
 review any cassette before committing it.
+
+CI starts `coverage run -m pytest` before pytest plugins import agentrec, then
+requires a 90% branch-enabled coverage report. Starting coverage only after
+pytest11 imports would miss import-time code. The matrix covers three Python
+versions on three OSes; quality checks run ruff, strict mypy, and strict MkDocs.
+Packaging builds wheel/sdist and tests the installed wheel in a fresh venv with
+core dependencies only. pip-audit is a non-blocking warning job. CodeQL and
+Scorecard upload findings to code scanning. No Scorecard badge is shown before
+a successful remote run. All external actions use full verified commit SHAs.
+
+These workflows are configured, not remotely verified in this local branch.
+Publishing and Pages setup are described in [releasing](releasing.md).
