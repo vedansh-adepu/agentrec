@@ -14,15 +14,19 @@ from agentrec.errors import CassetteError, ReplayMissError
 from agentrec.examples import record_math_flow, replay_math_flow
 from agentrec.models import RunRecord, Step
 from agentrec.store import CassetteStore
-from agentrec.validation import validate_cassette
+from agentrec.validation import validate_cassette, validate_v2_cassette
 
 app = typer.Typer(help="Record and replay offline agentrec examples.")
 
 
 @app.command()
 def record(
-    run_path: Path = typer.Option(..., "--run-path", help="Path to write the cassette."),
-    expression: str = typer.Option("2+3", "--expression", help="Math expression to record."),
+    run_path: Path = typer.Option(
+        ..., "--run-path", help="Path to write the cassette."
+    ),
+    expression: str = typer.Option(
+        "2+3", "--expression", help="Math expression to record."
+    ),
     force: bool = typer.Option(
         False,
         "--force",
@@ -40,7 +44,9 @@ def record(
 @app.command()
 def replay(
     run_path: Path = typer.Option(..., "--run-path", help="Path to read the cassette."),
-    expression: str = typer.Option("2+3", "--expression", help="Math expression to replay."),
+    expression: str = typer.Option(
+        "2+3", "--expression", help="Math expression to replay."
+    ),
 ) -> None:
     """Replay the offline math flow."""
 
@@ -61,6 +67,34 @@ def show(
 ) -> None:
     """Show cassette metadata and trace steps."""
 
+    if (run_path / "cassette.json").exists() or (
+        run_path / "interactions.jsonl"
+    ).exists():
+        summary = validate_v2_cassette(run_path, level="structural")
+        if not summary["ok"]:
+            typer.secho(
+                "Cassette error: " + "; ".join(summary["errors"]),
+                err=True,
+                fg=typer.colors.RED,
+            )
+            raise typer.Exit(code=1)
+        from agentrec.cassette.store import CassetteStore as V2CassetteStore
+
+        metadata, interactions = V2CassetteStore(run_path).load()
+        if json_output:
+            _print_json(
+                {
+                    "cassette": metadata.model_dump(mode="json"),
+                    "interaction_count": len(interactions),
+                    "interactions": [
+                        item.model_dump(mode="json") for item in interactions
+                    ],
+                }
+            )
+        else:
+            typer.echo(f"Cassette schema v2: {len(interactions)} interactions")
+        return
+
     store = CassetteStore(run_path)
     try:
         store.validate()
@@ -70,7 +104,9 @@ def show(
         typer.secho(f"Cassette error: {exc}", err=True, fg=typer.colors.RED)
         raise typer.Exit(code=1) from exc
     except ValueError as exc:
-        typer.secho(f"Cassette error: malformed cassette: {exc}", err=True, fg=typer.colors.RED)
+        typer.secho(
+            f"Cassette error: malformed cassette: {exc}", err=True, fg=typer.colors.RED
+        )
         raise typer.Exit(code=1) from exc
 
     if json_output:
@@ -104,7 +140,9 @@ def diff(
         typer.secho(f"Cassette error: {exc}", err=True, fg=typer.colors.RED)
         raise typer.Exit(code=1) from exc
     except ValueError as exc:
-        typer.secho(f"Cassette error: malformed cassette: {exc}", err=True, fg=typer.colors.RED)
+        typer.secho(
+            f"Cassette error: malformed cassette: {exc}", err=True, fg=typer.colors.RED
+        )
         raise typer.Exit(code=1) from exc
 
     if json_output:
@@ -129,8 +167,34 @@ def diff(
 def validate(
     run_path: Path = typer.Option(..., "--run-path", help="Cassette path to validate."),
     json_output: bool = typer.Option(False, "--json", help="Print JSON output."),
+    level: str = typer.Option("privacy", "--level", help="Schema-v2 validation level."),
+    allow_failed: bool = typer.Option(False, "--allow-failed"),
 ) -> None:
     """Validate cassette structure and parseability."""
+
+    if (run_path / "cassette.json").exists() or (
+        run_path / "interactions.jsonl"
+    ).exists():
+        try:
+            summary = validate_v2_cassette(
+                run_path, level=level, allow_failed=allow_failed
+            )
+        except ValueError as exc:
+            typer.secho(f"error: {exc}", err=True, fg=typer.colors.RED)
+            raise typer.Exit(code=2) from exc
+        if json_output:
+            _print_json(summary)
+        else:
+            typer.echo(f"ok: {summary['ok']}")
+            typer.echo(f"level: {summary['level']}")
+            typer.echo(f"interaction_count: {summary['interaction_count']}")
+            for warning in summary["warnings"]:
+                typer.echo(f"warning: {warning}")
+            for error in summary["errors"]:
+                typer.echo(f"error: {error}")
+        if not summary["ok"]:
+            raise typer.Exit(code=1)
+        return
 
     summary = validate_cassette(run_path)
     if json_output:
@@ -189,7 +253,11 @@ def _prepare_record_path(run_path: Path, force: bool) -> None:
         run_path.unlink()
         return
 
-    typer.secho(f"Cannot overwrite unsupported path type: {run_path}", err=True, fg=typer.colors.RED)
+    typer.secho(
+        f"Cannot overwrite unsupported path type: {run_path}",
+        err=True,
+        fg=typer.colors.RED,
+    )
     raise typer.Exit(code=1)
 
 

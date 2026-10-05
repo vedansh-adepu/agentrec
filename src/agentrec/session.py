@@ -15,11 +15,12 @@ from typing import Any, Literal, ParamSpec, TypeVar
 
 from .cassette.model import CassetteMetadata, ErrorRecord, Interaction, PolicyRecord
 from .cassette.replay import ReplayIndex
-from .cassette.store import CassetteOwnershipError, CassetteStore
+from .cassette.store import CassetteOwnershipError, CassetteStore, CassetteStoreError
 from .errors import ReplayExhaustedError, ReplayMissError
 from .matching import MatchPolicy
 from .modes import RecordMode, resolve_mode
 from .redaction import REDACTION_POLICY_VERSION, Redactor
+from .validation import validate_v2_cassette
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -65,6 +66,11 @@ class Session:
                 self.store.require_owned()
         elif self.path.exists():
             metadata, interactions = self.store.load()
+            validation = validate_v2_cassette(self.path, level="integrity")
+            if not validation["ok"]:
+                raise CassetteStoreError(
+                    "cassette integrity failed: " + "; ".join(validation["errors"])
+                )
             if metadata.status == "failed" and not allow_failed:
                 raise CassetteOwnershipError(
                     "failed cassette requires allow_failed=True"

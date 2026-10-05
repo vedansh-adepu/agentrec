@@ -59,6 +59,39 @@ class CassetteMetadata(StrictModel):
         return self
 
 
+class HttpRequest(StrictModel):
+    """Persist the inspectable HTTP request at the transport boundary."""
+
+    method: str
+    url: str
+    headers: dict[str, str]
+    body: str
+    body_encoding: Literal["text", "base64"]
+
+
+class HttpResponse(StrictModel):
+    """Persist a complete HTTP response, including SSE marker when relevant."""
+
+    status: int = Field(ge=100, le=599)
+    headers: dict[str, str]
+    body: str
+    body_encoding: Literal["text", "base64"]
+    streamed: bool
+
+
+class ToolRequest(StrictModel):
+    """Persist a named tool call with its argument mapping."""
+
+    name: str
+    arguments: dict[str, Any]
+
+
+class ToolResponse(StrictModel):
+    """Persist one tool result, including JSON null."""
+
+    result: Any
+
+
 class Interaction(StrictModel):
     """Represent one ordered HTTP or tool boundary and its observed outcome."""
 
@@ -78,4 +111,12 @@ class Interaction(StrictModel):
         """Require exactly one response or error for a finalized interaction."""
         if (self.response is None) == (self.error is None):
             raise ValueError("interaction requires exactly one response or error")
+        if self.kind == "http":
+            HttpRequest.model_validate(self.request)
+            if self.response is not None:
+                HttpResponse.model_validate(self.response)
+        else:
+            ToolRequest.model_validate(self.request)
+            if self.response is not None:
+                ToolResponse.model_validate(self.response)
         return self
