@@ -7,13 +7,35 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import httpx
 
-__version__ = "0.1.0"
+__version__ = "1.0.0rc1"
 
 
+from .errors import (
+    AgentRecError,
+    ReplayedToolError,
+    ReplayedTransportError,
+    ReplayExhaustedError,
+    ReplayMissError,
+    ReplayOrderError,
+    UnplayedInteractionsError,
+)
+from .matching import MatchPolicy
+from .modes import RecordMode
+from .redaction import Redactor
 from .session import Session, session
 
 __all__ = [
+    "AgentRecError",
+    "MatchPolicy",
+    "RecordMode",
+    "Redactor",
+    "ReplayExhaustedError",
+    "ReplayMissError",
+    "ReplayOrderError",
+    "ReplayedToolError",
+    "ReplayedTransportError",
     "Session",
+    "UnplayedInteractionsError",
     "__version__",
     "legacy_async_httpx_transport",
     "legacy_httpx_transport",

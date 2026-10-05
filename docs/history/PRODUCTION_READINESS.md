@@ -1,3 +1,5 @@
+Historical code blocks are illustrative records of the original 0.x project; they are not current commands.
+
 # Production Readiness
 
 This document describes what agentrec supports today and what remains before a larger release.

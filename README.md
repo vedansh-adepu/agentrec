@@ -18,17 +18,45 @@ replays their recorded outcomes.
 ## Install
 
 From a clone, create a virtual environment and install the test extras.
+
+Illustrative setup commands (environment-dependent):
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -e ".[test]"
+```
+
 `httpx2` is installed with the test extra; the optional legacy adapter is
 `agentrec[httpx]`. The current branch is development work toward 1.0.0rc1,
 not a published release.
 
 ## Quickstart
 
-The [field-tech example](examples/field_tech_agent/run.py) is executable
-source for an OpenAI SDK client with a fake upstream, a session transport, and
-three decorated tools. It requires no account or network access. Applications
-using a real provider pass an SDK client backed by `rec.transport()` or
-`rec.async_transport()`; they must supply their own credentials and policy.
+This offline example uses the real OpenAI SDK and a fake upstream. Run it twice:
+the first run records, the second replays without calling the fake or tool body.
+The test suite executes this exact block twice. See the field-tech demo for an
+agent loop with model-driven tool calls.
+
+<!-- tested: quickstart -->
+```python
+import httpx2
+from openai import OpenAI
+import agentrec
+
+fake = httpx2.MockTransport(lambda request: httpx2.Response(200, json={
+    "id": "chatcmpl-example", "object": "chat.completion", "created": 1,
+    "model": "fake", "choices": [{"index": 0, "message": {
+        "role": "assistant", "content": "Use IGN-9"}, "finish_reason": "stop"}]}))
+with agentrec.session("quickstart", mode="once") as rec:
+    @rec.tool
+    def lookup_part(model: str) -> dict:
+        return {"part": "IGN-9", "model": model}
+    with OpenAI(api_key="test", http_client=httpx2.Client(transport=rec.transport(fake))) as client:
+        answer = client.chat.completions.create(model="fake", messages=[{"role": "user", "content": "No heat"}])
+        assert answer.choices[0].message.content == "Use IGN-9"
+        assert lookup_part("F-100")["part"] == "IGN-9"
+```
 
 ## The 60-second demo
 
@@ -36,10 +64,12 @@ With the project installed using `pip install -e ".[test]"`, run
 `python examples/field_tech_agent/run.py`. The test suite executes the same
 demo and checks its output. Actual output from that command:
 
+<!-- tested: demo-output -->
 ```text
 record: Replace the IGN-9 igniter on furnace F-100. model_calls=3 work_order=True
 replay: Replace the IGN-9 igniter on furnace F-100. upstream_calls=0 work_order=False
-modified prompt: replay miss for POST https://offline.example.test/v1/chat/completions; closest recorded: seq 0 first differing path /body; seq 3 first differing path /body; seq 6 first differing path /body
+modified prompt: AR101 replay miss for POST https://offline.example.test/v1/chat/completions; closest recorded: seq 0 first differing path /body; seq 3 first differing path /body; seq 6 first differing path /body
+hint: Compare the request and matching policy, or re-record the cassette.
 diff: steps=7 changed=2 added=0 removed=0
 ```
 
@@ -110,7 +140,8 @@ filesystem transaction.
 
 ## How it compares
 
-HTTP cassette libraries and LLM-focused replay tools already exist.
+vcrpy pioneered HTTP cassettes, and LLM-focused replay tools include openvcr,
+llm-rewind, and langchain-replay.
 agentrec's focus is model and tool boundaries in one ordered cassette,
 occurrence-correct replay, pre-persistence redaction, and step-level trajectory
 diffs through HTTPX2-native transports. It does not claim to be the first or
@@ -122,15 +153,19 @@ This branch has not been published to PyPI. The legacy v0 math API remains in
 the source tree temporarily, while its CLI commands have been removed.
 Current tests use fake upstreams, not live OpenAI or Anthropic API calls.
 Redaction cannot prove all sensitive content is absent. The format digest is
-not an authenticity signature. Benchmark and release hardening are still in
-progress.
+not an authenticity signature. Canonicalization mutation score is 80.52%, below the 85% target. The remote CI
+matrix and live-provider streaming have not been verified. Bodies, including
+streams, are buffered in memory. Older SDKs may wrap replay errors; inspect
+`__cause__`. See [test quality](docs/test-quality.md) and [performance](docs/performance.md).
 
 ## Roadmap
 
-Finish real-traffic edge cases, broader fuzz/property testing, performance
-measurement, strict package-wide typing and linting, documentation site, and
-release/supply-chain workflows before tagging 1.0.0rc1.
+Improve malformed canonical-tag coverage, evaluate disk-backed buffering for large
+runs, and explore provider/framework adapters after the transport API stabilizes.
 
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+[Architecture](docs/architecture.md) · [API stability](docs/api-stability.md) ·
+[Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)

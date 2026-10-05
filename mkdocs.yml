@@ -1,0 +1,40 @@
+site_name: agentrec
+site_url: https://vedansh-adepu.github.io/agentrec/
+repo_url: https://github.com/vedansh-adepu/agentrec
+strict: true
+theme:
+  name: material
+  font: false
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            show_source: false
+            members_order: source
+exclude_docs: |
+  history/
+  adr/0001-0010-original-decisions.md
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - API: api.md
+  - API stability: api-stability.md
+  - Matching: matching.md
+  - Redaction: redaction.md
+  - Cassette format: cassette-format.md
+  - Errors: errors.md
+  - CI and pytest: ci.md
+  - Migration: migration.md
+  - Performance: performance.md
+  - Test quality: test-quality.md
+  - Releasing: releasing.md
+  - Decisions:
+      - Occurrence queues: adr/0011-per-key-occurrence-queues.md
+      - Explicit matching: adr/0012-explicit-json-pointer-matching.md
+      - HTTP boundary: adr/0013-http-transport-interception.md
+      - Atomic finalize: adr/0014-buffered-atomic-finalize.md
+      - Redaction: adr/0015-redaction-before-persist.md
+      - Schema: adr/0016-schema-v2.md

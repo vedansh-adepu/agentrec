@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agentrec"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Deterministic record-and-replay harness for AI-agent runs."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -41,6 +41,9 @@ dev = [
   "pre-commit>=4.0",
   "mutmut>=3.8",
   "uv>=0.8",
+  "build>=1.2",
+  "mkdocs-material>=9.6",
+  "mkdocstrings[python]>=0.28",
 ]
 
 [project.entry-points.pytest11]
@@ -82,3 +85,6 @@ only_mutate = ["src/agentrec/canonical.py", "src/agentrec/matching.py", "src/age
 also_copy = ["docs"]
 pytest_add_cli_args = ["-p", "no:cacheprovider", "--disable-socket", "--allow-unix-socket"]
 pytest_add_cli_args_test_selection = ["tests/test_canonical_matching.py", "tests/test_replay_index.py", "tests/test_properties.py", "tests/test_mutation_regressions.py"]
+
+[tool.hatch.version]
+path = "src/agentrec/__init__.py"
