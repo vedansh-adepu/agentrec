@@ -19,3 +19,15 @@ class CassetteValidationError(CassetteError):
 
 class ReplayMissError(AgentRecError):
     """Raised when replay mode cannot find a cached response."""
+
+
+class ReplayExhaustedError(ReplayMissError):
+    """Raised when every recorded occurrence of a key has been consumed."""
+
+
+class ReplayOrderError(ReplayMissError):
+    """Raised when strict global sequence order is violated."""
+
+
+class UnplayedInteractionsError(AgentRecError):
+    """Raised when a replay session leaves recorded interactions unused."""
