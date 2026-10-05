@@ -222,7 +222,7 @@ class CassetteStore:
         try:
             metadata_bytes = self._file("cassette.json").read_bytes()
             raw = json.loads(metadata_bytes)
-        except (OSError, ValueError) as exc:
+        except (OSError, ValueError, RecursionError) as exc:
             raise CassetteStoreError("missing or invalid cassette.json") from exc
         if not isinstance(raw, dict):
             raise CassetteStoreError("cassette.json must be an object")
@@ -244,6 +244,6 @@ class CassetteStore:
                 .splitlines()
             )
             interactions = [Interaction.model_validate_json(line) for line in lines]
-        except (OSError, ValueError, ValidationError) as exc:
+        except (OSError, ValueError, ValidationError, RecursionError) as exc:
             raise CassetteStoreError("invalid schema-v2 cassette contents") from exc
         return metadata, interactions

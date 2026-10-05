@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import httpx2
+import openai
 from openai import OpenAI
 from openai.types.chat import ChatCompletionFunctionToolParam
 
@@ -201,8 +202,11 @@ def run_demo() -> list[str]:
                     work_order_path=replay_work_order,
                     upstream=forbidden,
                 )
-            except ReplayMissError as exc:
-                lines.append(f"modified prompt: {exc}")
+            except (ReplayMissError, openai.APIConnectionError) as exc:
+                cause = exc if isinstance(exc, ReplayMissError) else exc.__cause__
+                if not isinstance(cause, ReplayMissError):
+                    raise
+                lines.append(f"modified prompt: {cause}")
 
         with agentrec.session(second, mode="once") as rec:
             run_agent(

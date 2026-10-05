@@ -158,3 +158,56 @@ def test_failed_atomic_replace_leaves_no_temp_file(
         store.save(metadata, [interaction])
     assert list(store.path.glob("*.tmp")) == []
     assert not (store.path / "cassette.json").exists()
+
+
+def test_atomic_replace_retries_permission_error_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import agentrec.cassette.store as module
+
+    original = module.os.replace
+    attempts = 0
+
+    def transient(source: Path, destination: Path) -> None:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise PermissionError("Windows sharing violation")
+        original(source, destination)
+
+    monkeypatch.setattr(module.os, "replace", transient)
+    target = tmp_path / "atomic"
+    module._atomic_write(target, b"complete")
+    assert attempts == 2 and target.read_bytes() == b"complete"
+    assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_windows_skips_directory_fsync(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import agentrec.cassette.store as module
+
+    original_fsync = module.os.fsync
+    calls = 0
+
+    def observed(fd: int) -> None:
+        nonlocal calls
+        calls += 1
+        original_fsync(fd)
+
+    # Replace the module's os reference, not the process-wide os.name.
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(
+        module,
+        "os",
+        SimpleNamespace(
+            name="nt",
+            fdopen=module.os.fdopen,
+            fsync=observed,
+            replace=module.os.replace,
+        ),
+    )
+    target = tmp_path / "atomic"
+    module._atomic_write(target, b"complete")
+    assert calls == 1 and target.read_bytes() == b"complete"
