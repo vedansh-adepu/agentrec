@@ -9,7 +9,7 @@ from typing import Any
 
 import typer
 
-from agentrec.diff import diff_cassettes
+from agentrec.diff import diff_cassettes, diff_v2_cassettes
 from agentrec.errors import CassetteError, ReplayMissError
 from agentrec.examples import record_math_flow, replay_math_flow
 from agentrec.models import RunRecord, Step
@@ -131,8 +131,38 @@ def diff(
     left: Path = typer.Option(..., "--left", help="Left cassette path."),
     right: Path = typer.Option(..., "--right", help="Right cassette path."),
     json_output: bool = typer.Option(False, "--json", help="Print JSON output."),
+    fail_on_change: bool = typer.Option(False, "--fail-on-change"),
 ) -> None:
     """Diff two cassette runs."""
+
+    if (left / "cassette.json").exists() or (right / "cassette.json").exists():
+        try:
+            summary = diff_v2_cassettes(left, right)
+        except Exception as exc:
+            typer.secho(f"error: {exc}", err=True, fg=typer.colors.RED)
+            raise typer.Exit(code=1) from exc
+        if json_output:
+            _print_json(summary)
+        else:
+            typer.echo(
+                f"steps: {summary['steps']}, added: {summary['added']}, "
+                f"removed: {summary['removed']}, changed: {summary['changed']}"
+            )
+            typer.echo(f"duration_delta_ms: {summary['duration_delta_ms']}")
+            for detail in summary["details"]:
+                typer.echo(
+                    f"{detail['change']}: "
+                    f"{detail.get('left_seq')} -> {detail.get('right_seq')}"
+                )
+                for field in ("request_paths", "response_paths", "error_paths"):
+                    for difference in detail.get(field, []):
+                        typer.echo(
+                            f"  {field} {difference['path']}: "
+                            f"{difference['left']} -> {difference['right']}"
+                        )
+        if fail_on_change and summary["behavior_changed"]:
+            raise typer.Exit(code=1)
+        return
 
     try:
         summary = diff_cassettes(left, right)
