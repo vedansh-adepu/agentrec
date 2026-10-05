@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from functools import wraps
 from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar, cast
 
+from .canonical import decode_special_values
 from .cassette.model import ErrorRecord
 from .errors import ReplayedToolError, ReplayMissError
 
@@ -42,7 +43,7 @@ def decorate_tool(session: Session, function: Callable[P, R]) -> Callable[P, R]:
                     raise ReplayedToolError(played.error.type, played.error.message)
                 if played.response is None:
                     raise ReplayMissError("recorded tool interaction has no result")
-                return copy.deepcopy(played.response["result"])
+                return copy.deepcopy(decode_special_values(played.response["result"]))
             if not session._recording_allowed():
                 raise ReplayMissError(f"tool replay miss: {function.__name__}")
             started = datetime.now(UTC)
@@ -84,7 +85,7 @@ def decorate_tool(session: Session, function: Callable[P, R]) -> Callable[P, R]:
                 raise ReplayedToolError(played.error.type, played.error.message)
             if played.response is None:
                 raise ReplayMissError("recorded tool interaction has no result")
-            return copy.deepcopy(played.response["result"])
+            return copy.deepcopy(decode_special_values(played.response["result"]))
         if not session._recording_allowed():
             raise ReplayMissError(f"tool replay miss: {function.__name__}")
         started = datetime.now(UTC)

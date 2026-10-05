@@ -9,6 +9,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
+from agentrec.canonical import decode_special_values
 from agentrec.cassette.replay import ReplayIndex
 from agentrec.cassette.store import CassetteStore as V2CassetteStore
 from agentrec.matching import MatchPolicy, MatchPolicyError
@@ -146,7 +147,10 @@ def _policy_from_record(record: Any) -> MatchPolicy:
 def _stored_key(policy: MatchPolicy, interaction: Any) -> str:
     request = interaction.request
     if interaction.kind == "tool":
-        return policy.tool_key(request["name"], request["arguments"])
+        arguments = decode_special_values(request["arguments"])
+        if not isinstance(arguments, dict):
+            raise ValueError("stored tool arguments must be a mapping")
+        return policy.tool_key(request["name"], arguments)
     body = request.get("body", "")
     if request.get("body_encoding") == "base64":
         raw = base64.b64decode(body, validate=True)

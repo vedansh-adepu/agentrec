@@ -559,3 +559,43 @@ def test_threaded_tool_recording_has_contiguous_sequence(tmp_path: Path) -> None
     assert {entry.request["arguments"]["value"] for entry in interactions} == set(
         range(20)
     )
+
+
+def test_nonfinite_tool_result_round_trips_through_cassette(tmp_path: Path) -> None:
+    import math
+
+    from agentrec.cassette.store import CassetteStore
+    from agentrec.validation import validate_v2_cassette
+
+    path = tmp_path / "nonfinite"
+    with agentrec.session(path, mode="once") as rec:
+
+        @rec.tool
+        def measure(value: float) -> dict[str, float]:
+            return {
+                "positive": float("inf"),
+                "negative": float("-inf"),
+                "missing": float("nan"),
+                "input": value,
+            }
+
+        original = measure(float("inf"))
+        assert math.isnan(original["missing"])
+    assert validate_v2_cassette(path, level="integrity")["ok"]
+    disk = (path / "interactions.jsonl").read_text()
+    assert '"$float":"inf"' in disk
+    assert '"$float":"-inf"' in disk
+    assert '"$float":"nan"' in disk
+    _, interactions = CassetteStore(path).load()
+    assert not interactions[0].key_inputs_redacted
+    with agentrec.session(path, mode="none") as rec:
+
+        @rec.tool
+        def measure(value: float) -> dict[str, float]:
+            raise AssertionError("tool executed")
+
+        replayed = measure(float("inf"))
+    assert replayed["positive"] == float("inf")
+    assert replayed["negative"] == float("-inf")
+    assert math.isnan(replayed["missing"])
+    assert replayed["input"] == float("inf")

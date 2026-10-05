@@ -29,3 +29,12 @@ rather than pretending it can recompute the original hash. The SHA-256 digest
 detects accidental edits when metadata is unchanged; it is not a signature or
 protection against an attacker who can rewrite both files. Review untrusted
 cassettes before using them. Schema v1 is rejected; see [migration](migration.md).
+
+Tool arguments and results encode non-finite floats as single-key `$float`
+objects with `inf`, `-inf`, or `nan` values. Literal single-key `$float` and
+`$object` dictionaries are escaped as `$object` pairs to prevent collisions.
+Replay decodes these tags before returning tool results; integrity validation
+decodes arguments before recomputing their key. HTTP binary bodies use
+`body_encoding: base64`; HTTP text is UTF-8. Responses store decoded bytes
+and omit stale content-encoding and content-length headers. The HTTP client
+may generate a new content-length matching the decoded body.

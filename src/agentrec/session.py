@@ -6,13 +6,15 @@ import base64
 import copy
 import hashlib
 import json
+import logging
 import threading
 from collections import defaultdict
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal, ParamSpec, TypeVar
+from typing import Any, Literal, ParamSpec, TypeVar, cast
 
+from .canonical import decode_special_values, encode_special_values
 from .cassette.model import CassetteMetadata, ErrorRecord, Interaction, PolicyRecord
 from .cassette.replay import ReplayIndex
 from .cassette.store import CassetteOwnershipError, CassetteStore, CassetteStoreError
@@ -21,6 +23,8 @@ from .matching import MatchPolicy
 from .modes import RecordMode, resolve_mode
 from .redaction import REDACTION_POLICY_VERSION, Redactor
 from .validation import validate_v2_cassette
+
+LOGGER = logging.getLogger("agentrec")
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -41,6 +45,7 @@ class Session:
         allow_failed: bool = False,
         allow_policy_mismatch: bool = False,
         redactor: Redactor | None = None,
+        max_body_bytes: int = 5 * 1024 * 1024,
     ) -> None:
         """Open a path under one mode and validate existing cassette integrity."""
         self.path = Path(path)
@@ -48,6 +53,9 @@ class Session:
         self.match_policy = match_policy or MatchPolicy()
         self.store = CassetteStore(self.path)
         self.redactor = redactor or Redactor()
+        if max_body_bytes <= 0:
+            raise ValueError("max_body_bytes must be positive")
+        self.max_body_bytes = max_body_bytes
         self._lock = threading.RLock()
         self._started = datetime.now(UTC)
         self._closed = False
@@ -107,17 +115,21 @@ class Session:
             return None
         with self._lock:
             try:
-                return self._replay.play(key, request)
+                item = self._replay.play(key, request)
+                LOGGER.debug("replay hit key=%s seq=%d", key, item.seq)
+                return item
             except (ReplayMissError, ReplayExhaustedError):
+                LOGGER.debug("replay miss key=%s mode=%s", key, self.mode.value)
                 if self.mode is RecordMode.NEW_EPISODES:
                     return None
                 raise
 
     def _key_inputs_changed(self, kind: str, key: str, request: dict[str, Any]) -> bool:
         if kind == "tool":
-            return (
-                self.match_policy.tool_key(request["name"], request["arguments"]) != key
-            )
+            arguments = decode_special_values(request["arguments"])
+            if not isinstance(arguments, dict):
+                raise ValueError("stored tool arguments must be a mapping")
+            return self.match_policy.tool_key(request["name"], arguments) != key
         body = request.get("body", "")
         if request.get("body_encoding") == "base64":
             raw = base64.b64decode(body)
@@ -144,10 +156,16 @@ class Session:
             if self._closed:
                 raise RuntimeError("session is closed")
             stored_request = self.redactor.redact_request(
-                copy.deepcopy(request), kind=kind
+                cast(dict[str, Any], encode_special_values(copy.deepcopy(request))),
+                kind=kind,
             )
             stored_response = (
-                self.redactor.redact_response(copy.deepcopy(response), kind=kind)
+                self.redactor.redact_response(
+                    cast(
+                        dict[str, Any], encode_special_values(copy.deepcopy(response))
+                    ),
+                    kind=kind,
+                )
                 if response is not None
                 else None
             )
@@ -173,6 +191,7 @@ class Session:
             )
             self._occurrences[key] += 1
             self._new.append(item)
+            LOGGER.debug("recorded key=%s seq=%d kind=%s", key, item.seq, kind)
 
     def _recording_allowed(self) -> bool:
         return (

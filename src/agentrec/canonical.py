@@ -8,13 +8,18 @@ import math
 from collections.abc import Mapping
 from typing import TypeAlias
 
+from agentrec.errors import AgentRecError
+
 JsonValue: TypeAlias = (
     "bool | int | float | str | list[JsonValue] | dict[str, JsonValue] | None"
 )
 
 
-class CanonicalValueError(ValueError):
+class CanonicalValueError(AgentRecError, ValueError):
     """Raised when a value cannot be represented by canonical JSON."""
+
+    code = "AR301"
+    hint = "Use JSON value types with string object keys."
 
 
 def _tag(value: object) -> object:
@@ -98,3 +103,58 @@ def decode_canonical(text: str) -> JsonValue:
     if canonical_json(result) != text:
         raise CanonicalValueError("noncanonical JSON encoding")
     return result
+
+
+def encode_special_values(value: JsonValue) -> JsonValue:
+    """Tag non-finite floats for JSON storage without colliding with user dicts."""
+    if value is None or isinstance(value, str | bool | int):
+        return value
+    if isinstance(value, float):
+        if math.isnan(value):
+            return {"$float": "nan"}
+        if math.isinf(value):
+            return {"$float": "inf" if value > 0 else "-inf"}
+        return value
+    if isinstance(value, list):
+        return [encode_special_values(item) for item in value]
+    if isinstance(value, dict):
+        if not all(isinstance(key, str) for key in value):
+            raise CanonicalValueError("stored object keys must be strings")
+        encoded = {key: encode_special_values(item) for key, item in value.items()}
+        if len(encoded) == 1 and next(iter(encoded)) in {"$float", "$object"}:
+            key = next(iter(encoded))
+            return {"$object": [[key, encoded[key]]]}
+        return encoded
+    raise CanonicalValueError(f"unsupported stored value type: {type(value).__name__}")
+
+
+def decode_special_values(value: JsonValue) -> JsonValue:
+    """Restore tagged floats and escaped literal dictionaries from storage."""
+    if value is None or isinstance(value, str | bool | int | float):
+        return value
+    if isinstance(value, list):
+        return [decode_special_values(item) for item in value]
+    if isinstance(value, dict):
+        if len(value) == 1 and "$float" in value:
+            label = value["$float"]
+            if label not in ("nan", "inf", "-inf"):
+                raise CanonicalValueError("invalid stored float tag")
+            return {
+                "nan": float("nan"),
+                "inf": float("inf"),
+                "-inf": float("-inf"),
+            }[label]
+        if len(value) == 1 and "$object" in value:
+            pairs = value["$object"]
+            if not isinstance(pairs, list) or len(pairs) != 1:
+                raise CanonicalValueError("invalid stored object escape")
+            pair = pairs[0]
+            if (
+                not isinstance(pair, list)
+                or len(pair) != 2
+                or pair[0] not in ("$float", "$object")
+            ):
+                raise CanonicalValueError("invalid stored object escape")
+            return {pair[0]: decode_special_values(pair[1])}
+        return {key: decode_special_values(item) for key, item in value.items()}
+    raise CanonicalValueError("invalid stored value type")

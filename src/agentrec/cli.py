@@ -25,7 +25,7 @@ app = typer.Typer(
 def _fail(ctx: typer.Context, exc: Exception, *, code: int) -> None:
     if ctx.obj and ctx.obj.get("debug"):
         raise exc
-    typer.echo(f"error: {exc}", err=True)
+    typer.echo(f"error: {str(exc).splitlines()[0]}", err=True)
     raise typer.Exit(code=code) from exc
 
 
@@ -161,7 +161,10 @@ def validate(
     if json_output:
         _json(result)
     elif not result["ok"]:
-        typer.echo("error: " + "; ".join(result["errors"]), err=True)
+        typer.echo(
+            "error: " + "; ".join(str(e).splitlines()[0] for e in result["errors"]),
+            err=True,
+        )
     else:
         typer.echo(f"ok: {result['ok']}")
         typer.echo(f"level: {result['level']}")

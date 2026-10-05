@@ -11,6 +11,8 @@ from agentrec.canonical import (
     canonical_json,
     canonical_sha256,
     decode_canonical,
+    decode_special_values,
+    encode_special_values,
 )
 from agentrec.matching import MatchPolicy, MatchPolicyError
 
@@ -112,3 +114,20 @@ def test_raw_bytes_and_json_object_cannot_share_a_key() -> None:
     fake_json = {"kind": "raw", "sha256": hashlib.sha256(raw).hexdigest()}
     url = "https://example.test/upload"
     assert policy.http_key("POST", url, raw) != policy.http_key("POST", url, fake_json)
+
+
+def test_storage_tags_special_floats_without_literal_dict_collision() -> None:
+    source = {
+        "positive": float("inf"),
+        "negative": float("-inf"),
+        "nan": float("nan"),
+        "literal": {"$float": "inf"},
+        "escaped": {"$object": [["x", 1]]},
+    }
+    stored = encode_special_values(source)
+    restored = decode_special_values(stored)
+    assert restored["positive"] == float("inf")
+    assert restored["negative"] == float("-inf")
+    assert math.isnan(restored["nan"])
+    assert restored["literal"] == {"$float": "inf"}
+    assert restored["escaped"] == {"$object": [["x", 1]]}

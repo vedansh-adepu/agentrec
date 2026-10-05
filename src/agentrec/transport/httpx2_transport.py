@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import logging
 import time
 from datetime import UTC, datetime
 from typing import Any
@@ -14,6 +15,18 @@ from agentrec.errors import ReplayedTransportError, ReplayMissError
 from agentrec.session import Session
 
 from .sse import AsyncRecordingStream, RecordingStream
+
+LOGGER = logging.getLogger("agentrec")
+
+
+def _warn_large(session: Session, label: str, body: bytes) -> None:
+    if len(body) > session.max_body_bytes:
+        LOGGER.warning(
+            "%s body size %d exceeds configured %d bytes",
+            label,
+            len(body),
+            session.max_body_bytes,
+        )
 
 
 def _stored_body(content: bytes) -> dict[str, str]:
@@ -103,6 +116,7 @@ class RecordReplayTransport(httpx2.BaseTransport):
     def handle_request(self, request: httpx2.Request) -> httpx2.Response:
         """Replay a matching occurrence or record the upstream outcome."""
         content = request.read()
+        _warn_large(self.session, "request", content)
         headers = _headers(request.headers)
         key = self.session.match_policy.http_key(
             request.method, str(request.url), content, headers
@@ -142,6 +156,7 @@ class RecordReplayTransport(httpx2.BaseTransport):
         if streamed:
 
             def complete(body: bytes) -> None:
+                _warn_large(self.session, "response", body)
                 self.session._append(
                     "http",
                     key,
@@ -159,6 +174,7 @@ class RecordReplayTransport(httpx2.BaseTransport):
                 request=request,
             )
         body = response.read()
+        _warn_large(self.session, "response", body)
         self.session._append(
             "http",
             key,
@@ -194,6 +210,7 @@ class AsyncRecordReplayTransport(httpx2.AsyncBaseTransport):
     async def handle_async_request(self, request: httpx2.Request) -> httpx2.Response:
         """Replay a matching occurrence or record the async upstream outcome."""
         content = await request.aread()
+        _warn_large(self.session, "request", content)
         headers = _headers(request.headers)
         key = self.session.match_policy.http_key(
             request.method, str(request.url), content, headers
@@ -233,6 +250,7 @@ class AsyncRecordReplayTransport(httpx2.AsyncBaseTransport):
         if streamed:
 
             def complete(body: bytes) -> None:
+                _warn_large(self.session, "response", body)
                 self.session._append(
                     "http",
                     key,
@@ -250,6 +268,7 @@ class AsyncRecordReplayTransport(httpx2.AsyncBaseTransport):
                 request=request,
             )
         body = await response.aread()
+        _warn_large(self.session, "response", body)
         self.session._append(
             "http",
             key,

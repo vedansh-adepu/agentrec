@@ -13,6 +13,8 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from agentrec.errors import AgentRecError
+
 from .model import (
     SCHEMA_VERSION,
     CassetteMetadata,
@@ -22,20 +24,32 @@ from .model import (
 KEY_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 
-class CassetteStoreError(Exception):
+class CassetteStoreError(AgentRecError):
     """Base error for invalid, unsafe, or unavailable cassettes."""
+
+    code = "AR203"
+    hint = "Check cassette ownership, format, and filesystem permissions."
 
 
 class CassetteVersionError(CassetteStoreError):
     """An existing cassette uses a schema this release cannot read."""
 
+    code = "AR204"
+    hint = "Re-record using schema v2; see docs/migration.md."
+
 
 class CassetteOwnershipError(CassetteStoreError):
     """A destructive operation targeted a directory agentrec does not own."""
 
+    code = "AR205"
+    hint = "Choose a new directory or a valid owned cassette."
+
 
 class CassetteLockedError(CassetteStoreError):
     """Another writer already holds the cassette path lock."""
+
+    code = "AR206"
+    hint = "Wait for the active writer; inspect stale locks after a crash."
 
 
 def _atomic_write(path: Path, data: bytes) -> None:

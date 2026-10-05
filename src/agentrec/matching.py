@@ -9,11 +9,16 @@ from dataclasses import dataclass, field
 from typing import Any, cast
 from urllib.parse import parse_qsl, urlsplit
 
+from agentrec.errors import AgentRecError
+
 from .canonical import JsonValue, canonical_sha256
 
 
-class MatchPolicyError(ValueError):
+class MatchPolicyError(AgentRecError, ValueError):
     """Raised for an invalid or unsupported matching policy."""
+
+    code = "AR302"
+    hint = "Check the URL, policy version, and explicit JSON-pointer paths."
 
 
 def _remove_pointer(value: JsonValue, pointer: str) -> JsonValue:
