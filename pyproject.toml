@@ -26,6 +26,9 @@ test = [
   "pytest>=8.0",
   "pytest-cov>=5.0",
   "pytest-socket>=0.7",
+  "httpx2>=2.13",
+  "openai>=3",
+  "anthropic>=1",
 ]
 
 dev = [
@@ -42,7 +45,7 @@ Issues = "https://github.com/vedansh-adepu/agentrec/issues"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "--disable-socket"
+addopts = "--disable-socket --allow-unix-socket"
 
 [tool.ruff]
 target-version = "py311"
