@@ -46,3 +46,6 @@ mutants/
 .wheel-venv/
 
 /coverage.json
+
+# Manual live-smoke output (default is outside the repository)
+agentrec-live-smoke-*/

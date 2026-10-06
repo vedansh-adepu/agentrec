@@ -54,3 +54,38 @@ pull request cannot start it. Publication additionally requires
 `PYPI_PUBLISH_ENABLED == 'true'` and uses the `pypi` environment. Required
 reviewers must be configured in repository settings; naming the environment
 in YAML does not prove that protection has been configured.
+
+## Manual live verification
+
+`scripts/live_smoke.py` is a manual, paid-provider check and is never invoked
+by CI. Install `agentrec[test]` in your environment, set `OPENAI_API_KEY`
+and/or `ANTHROPIC_API_KEY`, then pass an explicit small, inexpensive model you
+have access to for each configured provider (illustrative, not executed here):
+
+```bash
+python scripts/live_smoke.py --openai-model "$OPENAI_SMOKE_MODEL" --anthropic-model "$ANTHROPIC_SMOKE_MODEL"
+```
+
+Omit the flag for a provider whose key is absent; that provider is skipped.
+There are no model defaults. OpenAI uses Chat Completions, so select a model
+supporting that endpoint and `max_completion_tokens`. Anthropic uses Messages.
+`--max-tokens` defaults to 32 and must be positive; this is an output-token
+limit, not a cost guarantee. SDK retries are disabled.
+
+The default output is a new system-temporary `agentrec-live-smoke-*` directory
+outside the repository. `--output /path/outside/repo` selects a location;
+existing provider subdirectories are refused. Writing inside the repository
+requires `--allow-repo-path`. The default name pattern is ignored by Git, but
+custom names are your responsibility. Keep cassettes private and inspect them:
+redaction is best effort, and this script does not delete its output.
+
+Each active provider records one non-streaming and one streaming request via
+`rec.transport()`, repeats both in sealed `none` mode, compares parsed SDK
+objects/events and checks exactly two recording calls and zero replay upstream
+calls. It invokes the actual CLI twice, with `validate --level replayable`
+and `validate --privacy`, and prints both JSON results. Response redaction can
+change returned values and make the parsed equality assertion fail; inspect
+such a failure locally. Errors print their type, not SDK request details.
+
+The live script has not been run here. Unit tests exercise parsing and output
+containment using fake keys and temporary paths.
