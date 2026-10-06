@@ -9,7 +9,7 @@ provider and would miss retries performed below the application layer.
 
 The v1 session supplies sync and async httpx2 transports to official SDK
 clients. Both model requests and SDK retries pass through the same occurrence
-index. The legacy httpx adapter is deferred to its optional-extra phase.
+index. The legacy httpx adapter is available through the optional httpx extra.
 
 ## Consequences
 

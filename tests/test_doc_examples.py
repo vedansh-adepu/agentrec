@@ -32,9 +32,11 @@ def test_exact_quickstart_block_records_and_replays(
     code = found[0][2]
     exec(compile(code, relative, "exec"), {})
     # Replace the upstream and tool body to prove the second execution replays.
+    assert "lambda request:" in code
+    assert 'return {"part": "IGN-9", "model": model}' in code
     replay = code.replace(
-        "lambda request: httpx2.Response(200, json={",
-        "lambda request: httpx2.Response(500, json={",
+        "lambda request:",
+        'lambda request: (_ for _ in ()).throw(AssertionError("upstream ran")) or',
     ).replace(
         'return {"part": "IGN-9", "model": model}',
         'raise AssertionError("replay executed tool")',

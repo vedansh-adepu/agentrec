@@ -9,7 +9,7 @@ requests with distinct outcomes.
 
 Schema v2 uses an ordered `interactions.jsonl` plus `cassette.json` with an
 ownership marker, policy identity, count, status, and SHA-256 content digest.
-The v1 loader rejects the old layout with a migration instruction.
+The agentrec 1.x loader rejects the old layout with a migration instruction.
 
 ## Consequences
 
