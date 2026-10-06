@@ -8,7 +8,7 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 - Breaking: cassette schema v2 replaces the old multi-file schema; v1 requires re-recording.
 - Breaking: fake math record/replay CLI commands are removed; the offline demo lives in examples.
-- Breaking: old 0.x Python imports move to private `_legacy`; use the Session API.
+- Breaking: the prototype Python API and its private retention package are removed; history remains at fb5b0a9. Use the Session API.
 - Public Session API records HTTP SDK clients and decorated sync/async tools.
 
 ### Fixed
