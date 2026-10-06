@@ -25,8 +25,12 @@ core dependencies only. pip-audit is a non-blocking warning job. CodeQL and
 Scorecard upload findings to code scanning. No Scorecard badge is shown before
 a successful remote run. All external actions use full verified commit SHAs.
 
-These workflows are configured, not remotely verified in this local branch.
-Publishing and Pages setup are described in [releasing](releasing.md).
+The published branch passed all nine OS/Python jobs, lowest dependencies,
+quality/docs, packaging/wheel smoke and pip-audit in this
+[verified tests run](https://github.com/vedansh-adepu/agentrec/actions/runs/37408832197).
+[CodeQL](https://github.com/vedansh-adepu/agentrec/actions/runs/37408832273)
+also passed. Release and Pages deployment were not triggered. Publishing and
+Pages setup are described in [releasing](releasing.md).
 
 ## Windows readiness
 
@@ -47,7 +51,7 @@ agentrec does not automatically steal stale locks.
 On Windows, asyncio needs a TCP socketpair for local IPC. The test fixture
 constructs only a fixed loopback pair using the pre-guard socket constructor;
 it does not enable ordinary sockets or DNS. Its helper is tested with fake
-sockets. Actual Windows behavior still needs the remote matrix.
+sockets. All three Windows matrix jobs passed in the linked tests run.
 
 The release workflow has only a `push.tags: ["v*"]` trigger. A branch push or
 pull request cannot start it. Publication additionally requires

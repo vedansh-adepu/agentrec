@@ -181,10 +181,11 @@ Older OpenAI SDK releases may wrap replay errors in APIConnectionError; inspect
 `__cause__`. The demo handles both direct and wrapped errors.
 
 The matrix is configured for Ubuntu, macOS, and Windows with Python 3.11/3.12/3.13.
-Only local macOS Python 3.11 and 3.13 were executed during development; remote
-matrix success must be checked after the branch is published. Windows storage
-behavior is also simulated by tests for one PermissionError retry and omitted
-directory fsync. Simulations do not substitute for an actual Windows runner.
+All nine remote matrix jobs passed after publication in the
+[verified tests run](https://github.com/vedansh-adepu/agentrec/actions/runs/37408832197); lowest dependencies,
+quality/docs and packaging also passed. Windows storage behavior has simulated
+checks for one PermissionError retry and omitted directory fsync alongside
+actual execution of the suite on Windows Python 3.11, 3.12 and 3.13.
 
 Final local hardening also exercises writer lifetime/failed-finalize cleanup,
 progressive and early-closed SSE streams in both transport families, midstream

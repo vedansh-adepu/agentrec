@@ -5,8 +5,8 @@ order, offline.
 
 [CI workflow](https://github.com/vedansh-adepu/agentrec/actions/workflows/tests.yml)
 
-The remote CI matrix has not run for this branch. Its results will appear
-after publication.
+The published branch passed all nine OS/Python matrix jobs, lowest dependencies,
+quality/docs and packaging checks; see the [verified CI run](https://github.com/vedansh-adepu/agentrec/actions/runs/37408832197).
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -174,7 +174,7 @@ diffs through HTTPX2-native transports.
 ## Limitations
 
 - Not yet published to PyPI.
-- Tests use fake upstreams; remote CI and live-provider streaming verification are pending.
+- Tests use fake upstreams; live-provider verification, including streaming, is pending.
 - Redaction cannot prove all sensitive content is absent.
 - The format digest is not an authenticity signature.
 - Bodies, including streams, are buffered in memory; see [performance](docs/performance.md).
