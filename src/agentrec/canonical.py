@@ -78,9 +78,15 @@ def _untag(value: object) -> JsonValue:
 
 def canonical_json(value: JsonValue) -> str:
     """Encode supported JSON values with stable order and tagged special floats."""
-    return json.dumps(
-        _tag(value), ensure_ascii=False, separators=(",", ":"), allow_nan=False
-    )
+    tagged = _tag(value)
+    try:
+        return json.dumps(
+            tagged, ensure_ascii=False, separators=(",", ":"), allow_nan=False
+        )
+    except ValueError as exc:
+        raise CanonicalValueError(
+            "canonical value exceeds JSON serializer limits"
+        ) from exc
 
 
 def canonical_bytes(value: JsonValue) -> bytes:
@@ -135,6 +141,8 @@ def decode_special_values(value: JsonValue) -> JsonValue:
     if isinstance(value, list):
         return [decode_special_values(item) for item in value]
     if isinstance(value, dict):
+        if not all(isinstance(key, str) for key in value):
+            raise CanonicalValueError("stored object keys must be strings")
         if len(value) == 1 and "$float" in value:
             label = value["$float"]
             if label not in ("nan", "inf", "-inf"):

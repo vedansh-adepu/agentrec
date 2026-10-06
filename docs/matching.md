@@ -23,3 +23,8 @@ The stored policy identity/config must match on replay unless
 `allow_policy_mismatch=True`. That escape hatch permits opening; it does not
 magically make incompatible keys match. Bodies containing secrets change keys
 unless ignored. Redacted key inputs cannot be fully reverified from disk.
+
+Canonical storage decoding rejects non-string object keys. Large integers retain
+their integer type and exact value within the Python JSON serializer's runtime
+digit limit. Values exceeding that limit raise CanonicalValueError (AR301); the
+library does not disable the interpreter's limit or coerce integers to floats.

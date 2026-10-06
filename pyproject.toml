@@ -84,7 +84,7 @@ source_paths = ["src/"]
 only_mutate = ["src/agentrec/canonical.py", "src/agentrec/matching.py", "src/agentrec/cassette/replay.py"]
 also_copy = ["docs"]
 pytest_add_cli_args = ["-p", "no:cacheprovider", "--disable-socket", "--allow-unix-socket"]
-pytest_add_cli_args_test_selection = ["tests/test_canonical_matching.py", "tests/test_replay_index.py", "tests/test_properties.py", "tests/test_mutation_regressions.py"]
+pytest_add_cli_args_test_selection = ["tests/test_canonical_matching.py", "tests/test_replay_index.py", "tests/test_properties.py", "tests/test_mutation_regressions.py", "tests/test_canonical_edges.py"]
 
 [tool.hatch.version]
 path = "src/agentrec/__init__.py"
