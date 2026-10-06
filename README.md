@@ -1,195 +1,195 @@
 # agentrec
 
-agentrec is a deterministic record-and-replay harness for AI-agent runs. It records model and tool interactions into local content-addressed cassettes, then replays those interactions hermetically so agent behavior becomes reproducible, inspectable, diffable, and testable.
+Deterministic record/replay for AI-agent runs: model calls and tool calls, in
+order, offline.
 
-## The Problem
+[CI workflow](https://github.com/vedansh-adepu/agentrec/actions/workflows/tests.yml)
 
-AI-agent runs are hard to test because they often change between executions. Model outputs can vary, tool calls can follow different paths, latency and cost can drift, and final answers can change even when the task looks the same. That makes debugging, reviewing regressions, and building reliable test fixtures difficult.
+The published branch passed all nine OS/Python matrix jobs, lowest dependencies,
+quality/docs and packaging checks; see the [verified CI run](https://github.com/vedansh-adepu/agentrec/actions/runs/37408832197).
+![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-## The Solution
+## Why I built it
 
-agentrec makes agent runs reproducible by recording the important interactions in a local cassette. A cassette stores normalized request hashes, model responses, tool results, trace steps, metadata, timing, usage, and final output.
+At work I own release evaluation for clinical models, and the failures that hurt most were the ones I couldn't reproduce.
 
-The current MVP supports this offline workflow:
+Agent failures are hard to reproduce: the same request can return different
+answers, tools can be flaky, and a bug you cannot replay is hard to fix. I
+wanted each failure to become a deterministic test fixture. agentrec records
+HTTP model calls and Python tool boundaries into one ordered cassette, then
+replays their recorded outcomes.
 
-- `record`: run the offline example once and save model/tool interactions into a cassette.
-- `replay`: serve the same model/tool responses from cassette data without live calls.
-- `show`: inspect run metadata and ordered trace steps.
-- `diff`: compare two cassette runs by final output, step count, step sequence, latency, and cost totals.
-- `validate`: check cassette structure and parseability before inspection, replay, or diffing.
+## Install
 
-## Current Demo
+From a clone, create a virtual environment and install the test extras.
 
-The current demo is intentionally small: an offline math flow using a fake model provider and a calculator tool.
-
-```bash
-agentrec record --run-path runs/math_001 --expression "2+3"
-agentrec replay --run-path runs/math_001 --expression "2+3"
-agentrec show --run-path runs/math_001
-agentrec diff --left runs/math_001 --right runs/math_002
-agentrec validate --run-path runs/math_001
-```
-
-To diff two runs, record another cassette first:
-
-```bash
-agentrec record --run-path runs/math_002 --expression "2+4"
-agentrec diff --left runs/math_001 --right runs/math_002
-```
-
-Recording refuses to overwrite an existing non-empty run path unless `--force` is explicit:
-
-```bash
-agentrec record --run-path runs/math_001 --expression "2+3" --force
-```
-
-## Local Setup
+Illustrative setup commands (environment-dependent):
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e ".[test]"
-pytest
 ```
 
-After installation from a local clone, the `agentrec` console command is available from the active environment.
+`httpx2` is installed with the test extra; the optional legacy adapter is
+`agentrec[httpx]`. The current branch is development work toward 1.0.0rc1,
+not a published release.
 
-## CI
+## Quickstart
 
-Tests pass on GitHub Actions for Python 3.11 and 3.12.
+This offline example uses the real OpenAI SDK and a fake upstream. Run it twice:
+the first run records, the second replays without calling the fake or tool body.
+The test suite executes this exact block twice. See the field-tech demo for an
+agent loop with model-driven tool calls.
 
-## Cassette Format
+<!-- tested: quickstart -->
+```python
+import httpx2
+from openai import OpenAI
+import agentrec
 
-agentrec stores runs in a local filesystem cassette:
+fake = httpx2.MockTransport(
+    lambda request: httpx2.Response(
+        200,
+        json={
+            "id": "chatcmpl-example",
+            "object": "chat.completion",
+            "created": 1,
+            "model": "fake",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {"role": "assistant", "content": "Use IGN-9"},
+                    "finish_reason": "stop",
+                }
+            ],
+        },
+    )
+)
+with agentrec.session("quickstart", mode="once") as rec:
 
+    @rec.tool
+    def lookup_part(model: str) -> dict:
+        return {"part": "IGN-9", "model": model}
+
+    with OpenAI(
+        api_key="test", http_client=httpx2.Client(transport=rec.transport(fake))
+    ) as client:
+        answer = client.chat.completions.create(
+            model="fake", messages=[{"role": "user", "content": "No heat"}]
+        )
+        assert answer.choices[0].message.content == "Use IGN-9"
+        assert lookup_part("F-100")["part"] == "IGN-9"
+```
+
+## The 60-second demo
+
+With the project installed using `pip install -e ".[test]"`, run
+`python examples/field_tech_agent/run.py`. The test suite executes the same
+demo and checks its output. Actual output from that command:
+
+<!-- tested: demo-output -->
 ```text
-metadata.json
-trace.jsonl
-responses/
-artifacts/final_output.txt
+record: Replace the IGN-9 igniter on furnace F-100. model_calls=3 work_order=True
+replay: Replace the IGN-9 igniter on furnace F-100. upstream_calls=0 work_order=False
+modified prompt: AR101 replay miss for POST https://offline.example.test/v1/chat/completions; closest recorded: seq 0 first differing path /body; seq 3 first differing path /body; seq 6 first differing path /body
+hint: Compare the request and matching policy, or re-record the cassette.
+diff: steps=7 changed=2 added=0 removed=0
 ```
 
-The current response files use this shape:
+The cassette contains three model calls with the same key and two
+`search_parts` calls with the same key. Replay consumes each occurrence in
+order and does not run the `create_work_order` body.
 
-```text
-responses/<request_hash>_<kind>.json
-```
+## Guarantees and limits
 
-where `kind` is `model` or `tool`.
+| Behavior | Guarantee |
+| --- | --- |
+| Replay miss | Raises instead of calling the upstream transport or tool body. |
+| Repeated key | Consumes recorded occurrences in order; an extra call fails. |
+| Tool effects | Recorded result or exception replays, but side effects do not. |
+| Validation | Checks schema, digest, counts, keys where recomputable, status, and known secret patterns. |
+| Concurrency | Recorded `seq` is completion order; global strict-order replay is optional. |
+| Isolation | This is a boundary recorder, not a process sandbox. Code outside the supplied transport/decorators can perform effects. |
 
-`metadata.json` includes a `schema_version` field. The current cassette schema version is `1`.
+## Record modes
 
-## Command Output and Exit Codes
+| Mode | Behavior |
+| --- | --- |
+| `none` | Replay only. Misses fail. |
+| `once` | Record if absent; replay if present. |
+| `new_episodes` | Replay matches and record misses. |
+| `all` | Replace an owned cassette with a new recording. |
 
-`show`, `diff`, and `validate` support machine-readable output:
+`AGENTREC_MODE` overrides a session's unspecified mode. The pytest fixture
+uses `none` by default in CI and `once` locally.
 
-```bash
-agentrec show --run-path runs/math_001 --json
-agentrec diff --left runs/math_001 --right runs/math_002 --json
-agentrec validate --run-path runs/math_001 --json
-```
+## Matching
 
-Exit codes:
+Default HTTP keys include method, normalized scheme/host/port/path, sorted
+query parameters, and a canonical JSON body or raw-byte hash. Headers are
+excluded unless explicitly selected. Tool keys include the tool name and
+canonical arguments. `MatchPolicy(ignore_body_paths=("/metadata/request_id",))`
+ignores only that JSON-pointer path; meaningful nested `timestamp` values
+remain. Policy identity and configuration are stored in the cassette.
 
-- `0`: success
-- `1`: replay miss, validation failure, cassette error, or record overwrite policy failure
-- `2`: Typer usage/configuration error
+## Redaction
 
-## Example Transcript
+Default rules redact sensitive header and query values and scan all stored
+strings for common key and token patterns. Matching uses the original request
+in memory; redaction happens before cassette writes. Secret values in a body
+still affect the key unless their path is explicitly ignored. Run
+`agentrec scrub CASSETTE` to apply current rules to an older cassette and
+`agentrec validate CASSETTE --privacy` to scan for known patterns. These
+rules reduce accidental disclosure, but cannot guarantee every secret is
+recognized. See [redaction](docs/redaction.md).
 
-```bash
-$ agentrec record --run-path runs/math_001 --expression "2+3"
-Recorded math flow.
-mode: record
-expression: 2+3
-model_output: Use the calculator tool for: calculate 2+3
-tool_output: {'result': 5}
-final_output: 5
-step_count: 3
+## Validation and diff
 
-$ agentrec replay --run-path runs/math_001 --expression "2+3"
-Replayed math flow.
-mode: replay
-expression: 2+3
-model_output: Use the calculator tool for: calculate 2+3
-tool_output: {'result': 5}
-final_output: 5
-step_count: 3
+`agentrec validate CASSETTE` defaults to replayability and privacy checks.
+`--level structural|integrity|replayable|privacy` selects a cumulative level.
+`agentrec diff A B --json --fail-on-change` reports changed request,
+response, and error paths plus added or removed steps; duration changes are
+reported separately from behavior. Check commands exit 1 on failed checks;
+invalid input exits 2. See [cassette format](docs/cassette-format.md) and
+[CI/pytest](docs/ci.md).
 
-$ agentrec show --run-path runs/math_001
-Cassette run.
-run_id: math_flow
-task: Calculate 2+3
-final_output: 5
-step_count: 3
-steps:
-  index: 0 | kind: model | name: fake-math | request_hash: <hash> | latency_ms: <ms>
-  index: 1 | kind: tool | name: calculator | request_hash: <hash> | latency_ms: <ms>
-  index: 2 | kind: final | name: final_output
+## Cassette format
 
-$ agentrec validate --run-path runs/math_001
-Cassette validation.
-ok: True
-run_path: runs/math_001
-run_id: math_flow
-task: Calculate 2+3
-schema_version: 1
-step_count: 3
-response_file_count: 2
-has_final_output: True
-```
+Schema v2 uses `cassette.json` and `interactions.jsonl`. The old schema-v1
+layout is rejected; see [migration](docs/migration.md). The interaction file
+and metadata file are each replaced atomically, with metadata last. A crash
+between replacements is detectable by the digest, but two files are not one
+filesystem transaction.
 
-## Current Production Guarantees
+## How it compares
 
-- Replay is hermetic for cached model and tool interactions.
-- Replay misses raise `ReplayMissError`.
-- Cassette inspection is read-only.
-- Diff is read-only.
-- Validation is read-only and reports structural problems.
-- Tests run offline.
-- No live OpenAI or Anthropic providers are implemented in the current MVP.
-
-## Current Status
-
-- Test suite runs locally and in GitHub Actions.
-- Tests pass through GitHub Actions CI on Python 3.11 and 3.12.
-- Offline math demo only.
-- Repository is public.
-- Live providers are not implemented yet.
-- CLI commands currently available: `record`, `replay`, `show`, `diff`, and `validate`.
-- Licensed under the MIT License.
+For a comparison starting point, see the HTTP cassette tool vcrpy and
+LLM-focused replay tools openvcr, llm-rewind, and langchain-replay.
+agentrec's focus is model and tool boundaries in one ordered cassette,
+occurrence-correct replay, pre-persistence redaction, and step-level trajectory
+diffs through HTTPX2-native transports.
 
 ## Limitations
 
-- No live provider integrations yet.
-- No LangChain or LangGraph adapters yet.
-- The example flow currently uses a fake provider and calculator tool.
-- No package publishing yet.
-- The CLI is intentionally plain and line-oriented.
+- Not yet published to PyPI.
+- Tests use fake upstreams; live-provider verification, including streaming, is pending.
+- Redaction cannot prove all sensitive content is absent.
+- The format digest is not an authenticity signature.
+- Bodies, including streams, are buffered in memory; see [performance](docs/performance.md).
+- Streaming replay preserves neither chunk timing nor partial chunks delivered before a recorded stream error.
+- Older SDKs may wrap replay errors; inspect `__cause__`.
+- Test quality and known gaps: see [docs/test-quality.md](docs/test-quality.md).
 
 ## Roadmap
 
-- Optional README badge.
-- Richer demo screenshots or terminal captures.
-- Optional live provider wrappers.
-- LangChain/LangGraph adapter.
-- Richer diff output.
-- Safer overwrite policy for record command.
-- Public release later, after the offline MVP and project documentation are stronger.
-
-## Non-Goals for the Current MVP
-
-- Web dashboard.
-- Database-backed storage.
-- Docker setup.
-- Live OpenAI or Anthropic provider support.
-- Cloud sync or hosted tracing backend.
-- Public repository visibility.
-
-## Development Notes
-
-Generated private runs should not be committed. The repository ignores `runs/`, `.env` files, virtual environments, caches, and common editor/OS files.
+Evaluate disk-backed buffering for large runs and explore provider/framework
+adapters after the transport API stabilizes.
 
 ## License
 
-agentrec is licensed under the MIT License. See `LICENSE` for details.
+MIT. See [LICENSE](LICENSE).
+
+[Architecture](docs/architecture.md) · [API stability](docs/api-stability.md) ·
+[Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)

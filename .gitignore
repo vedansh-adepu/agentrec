@@ -30,3 +30,22 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Build and static-analysis artifacts
+dist/
+build/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+
+# Documentation and mutation outputs
+site/
+mutants/
+*.sarif
+.wheel-venv/
+
+/coverage.json
+
+# Manual live-smoke output (default is outside the repository)
+agentrec-live-smoke-*/

@@ -1,336 +1,153 @@
+"""Schema-v2 CLI behavior and safe failure regressions."""
+
+from __future__ import annotations
+
 import json
 from pathlib import Path
-import socket
 
 import pytest
 from typer.testing import CliRunner
 
+import agentrec
+from agentrec.cassette.store import CassetteOwnershipError
 from agentrec.cli import app
-
 
 runner = CliRunner()
 
 
-def test_record_command_exits_zero_and_creates_cassette(tmp_path: Path) -> None:
-    run_path = tmp_path / "math_run"
+def cassette(path: Path, *, prompt: str = "original", result: str = "ok") -> None:
+    with agentrec.session(path, mode="once") as rec:
 
-    result = runner.invoke(
-        app,
-        ["record", "--run-path", str(run_path), "--expression", "2+3"],
-    )
+        @rec.tool
+        def lookup(prompt: str) -> str:
+            return result
 
-    assert result.exit_code == 0
-    assert (run_path / "metadata.json").is_file()
-    assert (run_path / "trace.jsonl").is_file()
-    assert (run_path / "responses").is_dir()
-    assert (run_path / "artifacts" / "final_output.txt").is_file()
+        assert lookup(prompt) == result
 
 
-def test_record_output_includes_final_output(tmp_path: Path) -> None:
-    result = runner.invoke(
-        app,
-        ["record", "--run-path", str(tmp_path / "math_run"), "--expression", "2+3"],
-    )
+def test_version_command_and_global_option() -> None:
+    command = runner.invoke(app, ["version"])
+    option = runner.invoke(app, ["--version"])
+    assert command.exit_code == option.exit_code == 0
+    assert command.output.strip() == option.output.strip() == agentrec.__version__
 
-    assert result.exit_code == 0
-    assert "Recorded math flow." in result.output
-    assert "final_output: 5" in result.output
 
+def test_show_json_and_text(tmp_path: Path) -> None:
+    path = tmp_path / "run"
+    cassette(path)
+    structured = runner.invoke(app, ["show", str(path), "--json"])
+    assert structured.exit_code == 0
+    assert json.loads(structured.output)["interaction_count"] == 1
+    text = runner.invoke(app, ["show", str(path)])
+    assert text.exit_code == 0
+    assert "occurrence=0" in text.output
 
-def test_record_refuses_to_overwrite_existing_cassette_without_force(tmp_path: Path) -> None:
-    run_path = tmp_path / "math_run"
-    first = runner.invoke(app, ["record", "--run-path", str(run_path), "--expression", "2+3"])
 
-    second = runner.invoke(app, ["record", "--run-path", str(run_path), "--expression", "2+4"])
+def test_validate_levels_and_check_failure_exit(tmp_path: Path) -> None:
+    path = tmp_path / "run"
+    cassette(path)
+    good = runner.invoke(app, ["validate", str(path), "--level", "integrity"])
+    assert good.exit_code == 0
+    (path / "interactions.jsonl").write_text("broken\n", encoding="utf-8", newline="\n")
+    bad = runner.invoke(app, ["validate", str(path), "--json"])
+    assert bad.exit_code == 1
+    assert not json.loads(bad.output)["ok"]
 
-    assert first.exit_code == 0
-    assert second.exit_code == 1
-    assert "Use --force to overwrite it" in second.output
 
-
-def test_record_force_overwrites_existing_cassette(tmp_path: Path) -> None:
-    run_path = tmp_path / "math_run"
-    runner.invoke(app, ["record", "--run-path", str(run_path), "--expression", "2+3"])
-
-    result = runner.invoke(
-        app,
-        ["record", "--run-path", str(run_path), "--expression", "2+4", "--force"],
-    )
-
-    assert result.exit_code == 0
-    assert "final_output: 6" in result.output
-    assert len((run_path / "trace.jsonl").read_text(encoding="utf-8").splitlines()) == 3
-
-
-def test_replay_command_exits_zero_after_recording(tmp_path: Path) -> None:
-    run_path = tmp_path / "math_run"
-
-    record_result = runner.invoke(
-        app,
-        ["record", "--run-path", str(run_path), "--expression", "2+3"],
-    )
-    replay_result = runner.invoke(
-        app,
-        ["replay", "--run-path", str(run_path), "--expression", "2+3"],
-    )
-
-    assert record_result.exit_code == 0
-    assert replay_result.exit_code == 0
-
-
-def test_replay_output_includes_final_output(tmp_path: Path) -> None:
-    run_path = tmp_path / "math_run"
-    runner.invoke(app, ["record", "--run-path", str(run_path), "--expression", "2+3"])
-
-    result = runner.invoke(
-        app,
-        ["replay", "--run-path", str(run_path), "--expression", "2+3"],
-    )
-
-    assert result.exit_code == 0
-    assert "Replayed math flow." in result.output
-    assert "final_output: 5" in result.output
-
-
-def test_replay_with_changed_expression_exits_nonzero(tmp_path: Path) -> None:
-    run_path = tmp_path / "math_run"
-    runner.invoke(app, ["record", "--run-path", str(run_path), "--expression", "2+3"])
-
-    result = runner.invoke(
-        app,
-        ["replay", "--run-path", str(run_path), "--expression", "2+4"],
-    )
-
-    assert result.exit_code == 1
-
-
-def test_replay_miss_output_includes_clear_message(tmp_path: Path) -> None:
-    run_path = tmp_path / "math_run"
-    runner.invoke(app, ["record", "--run-path", str(run_path), "--expression", "2+3"])
-
-    result = runner.invoke(
-        app,
-        ["replay", "--run-path", str(run_path), "--expression", "2+4"],
-    )
-
-    assert "Replay miss:" in result.output
-
-
-def test_show_command_exits_zero_after_recording(tmp_path: Path) -> None:
-    run_path = tmp_path / "math_run"
-    runner.invoke(app, ["record", "--run-path", str(run_path), "--expression", "2+3"])
-
-    result = runner.invoke(app, ["show", "--run-path", str(run_path)])
-
-    assert result.exit_code == 0
-
-
-def test_show_output_includes_metadata_and_step_count(tmp_path: Path) -> None:
-    run_path = tmp_path / "math_run"
-    runner.invoke(app, ["record", "--run-path", str(run_path), "--expression", "2+3"])
-
-    result = runner.invoke(app, ["show", "--run-path", str(run_path)])
-
-    assert "run_id: math_flow" in result.output
-    assert "task: Calculate 2+3" in result.output
-    assert "final_output: 5" in result.output
-    assert "step_count: 3" in result.output
-
-
-def test_show_output_includes_step_kinds(tmp_path: Path) -> None:
-    run_path = tmp_path / "math_run"
-    runner.invoke(app, ["record", "--run-path", str(run_path), "--expression", "2+3"])
-
-    result = runner.invoke(app, ["show", "--run-path", str(run_path)])
-
-    assert "kind: model" in result.output
-    assert "kind: tool" in result.output
-    assert "kind: final" in result.output
-
-
-def test_show_json_outputs_machine_readable_summary(tmp_path: Path) -> None:
-    run_path = tmp_path / "math_run"
-    runner.invoke(app, ["record", "--run-path", str(run_path), "--expression", "2+3"])
-
-    result = runner.invoke(app, ["show", "--run-path", str(run_path), "--json"])
-
-    assert result.exit_code == 0
-    payload = json.loads(result.output)
-    assert payload["run"]["run_id"] == "math_flow"
-    assert payload["run"]["schema_version"] == "1"
-    assert payload["step_count"] == 3
-    assert [step["kind"] for step in payload["steps"]] == ["model", "tool", "final"]
-
-
-def test_show_command_is_read_only(tmp_path: Path) -> None:
-    run_path = tmp_path / "math_run"
-    runner.invoke(app, ["record", "--run-path", str(run_path), "--expression", "2+3"])
-    before = _snapshot(run_path)
-
-    result = runner.invoke(app, ["show", "--run-path", str(run_path)])
-
-    assert result.exit_code == 0
-    assert _snapshot(run_path) == before
-
-
-def test_show_on_missing_cassette_exits_nonzero_with_clear_message(tmp_path: Path) -> None:
-    result = runner.invoke(app, ["show", "--run-path", str(tmp_path / "missing_run")])
-
-    assert result.exit_code == 1
-    assert "Cassette error:" in result.output
-
-
-def test_diff_command_exits_zero_for_valid_cassettes(tmp_path: Path) -> None:
-    left = tmp_path / "left"
-    right = tmp_path / "right"
-    runner.invoke(app, ["record", "--run-path", str(left), "--expression", "2+3"])
-    runner.invoke(app, ["record", "--run-path", str(right), "--expression", "2+3"])
-
-    result = runner.invoke(app, ["diff", "--left", str(left), "--right", str(right)])
-
-    assert result.exit_code == 0
-
-
-def test_diff_output_includes_changed_status(tmp_path: Path) -> None:
-    left = tmp_path / "left"
-    right = tmp_path / "right"
-    runner.invoke(app, ["record", "--run-path", str(left), "--expression", "2+3"])
-    runner.invoke(app, ["record", "--run-path", str(right), "--expression", "2+3"])
-
-    result = runner.invoke(app, ["diff", "--left", str(left), "--right", str(right)])
-
-    assert "Cassette diff." in result.output
-    assert "changed: False" in result.output
-
-
-def test_diff_output_detects_final_output_difference(tmp_path: Path) -> None:
-    left = tmp_path / "left"
-    right = tmp_path / "right"
-    runner.invoke(app, ["record", "--run-path", str(left), "--expression", "2+3"])
-    runner.invoke(app, ["record", "--run-path", str(right), "--expression", "2+4"])
-
-    result = runner.invoke(app, ["diff", "--left", str(left), "--right", str(right)])
-
-    assert result.exit_code == 0
-    assert "final_output_changed: True" in result.output
-    assert "changed: True" in result.output
-
-
-def test_diff_json_outputs_machine_readable_summary(tmp_path: Path) -> None:
-    left = tmp_path / "left"
-    right = tmp_path / "right"
-    runner.invoke(app, ["record", "--run-path", str(left), "--expression", "2+3"])
-    runner.invoke(app, ["record", "--run-path", str(right), "--expression", "2+4"])
-
-    result = runner.invoke(app, ["diff", "--left", str(left), "--right", str(right), "--json"])
-
-    assert result.exit_code == 0
-    payload = json.loads(result.output)
-    assert payload["final_output_changed"] is True
-    assert payload["changed"] is True
-
-
-def test_diff_on_missing_cassette_exits_nonzero_with_clear_message(tmp_path: Path) -> None:
-    left = tmp_path / "left"
-    runner.invoke(app, ["record", "--run-path", str(left), "--expression", "2+3"])
-
-    result = runner.invoke(
-        app,
-        ["diff", "--left", str(left), "--right", str(tmp_path / "missing")],
-    )
-
-    assert result.exit_code == 1
-    assert "Cassette error:" in result.output
-
-
-def test_validate_command_exits_zero_for_valid_cassette(tmp_path: Path) -> None:
-    run_path = tmp_path / "math_run"
-    runner.invoke(app, ["record", "--run-path", str(run_path), "--expression", "2+3"])
-
-    result = runner.invoke(app, ["validate", "--run-path", str(run_path)])
-
-    assert result.exit_code == 0
-
-
-def test_validate_output_includes_ok_true(tmp_path: Path) -> None:
-    run_path = tmp_path / "math_run"
-    runner.invoke(app, ["record", "--run-path", str(run_path), "--expression", "2+3"])
-
-    result = runner.invoke(app, ["validate", "--run-path", str(run_path)])
-
-    assert "Cassette validation." in result.output
-    assert "ok: True" in result.output
-    assert "schema_version: 1" in result.output
-
-
-def test_validate_json_outputs_machine_readable_summary(tmp_path: Path) -> None:
-    run_path = tmp_path / "math_run"
-    runner.invoke(app, ["record", "--run-path", str(run_path), "--expression", "2+3"])
-
-    result = runner.invoke(app, ["validate", "--run-path", str(run_path), "--json"])
-
-    assert result.exit_code == 0
-    payload = json.loads(result.output)
-    assert payload["ok"] is True
-    assert payload["schema_version"] == "1"
-    assert payload["step_count"] == 3
-
-
-def test_validate_on_missing_cassette_exits_nonzero(tmp_path: Path) -> None:
-    result = runner.invoke(app, ["validate", "--run-path", str(tmp_path / "missing_run")])
-
-    assert result.exit_code == 1
-
-
-def test_validate_on_missing_cassette_outputs_error_text(tmp_path: Path) -> None:
-    result = runner.invoke(app, ["validate", "--run-path", str(tmp_path / "missing_run")])
-
-    assert "ok: False" in result.output
-    assert "Missing cassette path" in result.output
-
-
-def test_cli_commands_introduce_no_live_network_calls(
+def test_scrub_refuses_unowned_directory_without_deleting_anything(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    run_path = tmp_path / "math_run"
-    other_run_path = tmp_path / "math_run_other"
+    path = tmp_path / "unrelated"
+    path.mkdir()
+    precious = path / "precious.txt"
+    precious.write_text("do not delete", encoding="utf-8", newline="\n")
+    result = runner.invoke(app, ["scrub", str(path)])
+    assert result.exit_code == 2
+    assert result.output.startswith("error:")
+    assert precious.read_text(encoding="utf-8") == "do not delete"
 
-    def fail_socket(*args: object, **kwargs: object) -> None:
-        raise AssertionError("network should not be used")
 
-    monkeypatch.setattr(socket, "socket", fail_socket)
+def test_scrub_owned_cassette(tmp_path: Path) -> None:
+    path = tmp_path / "run"
+    cassette(path)
+    result = runner.invoke(app, ["scrub", str(path)])
+    assert result.exit_code == 0
+    assert "scrubbed interactions: 0" in result.output
 
-    record_result = runner.invoke(
-        app,
-        ["record", "--run-path", str(run_path), "--expression", "2+3"],
+
+def test_inspect_miss_explains_changed_tool_argument(tmp_path: Path) -> None:
+    path = tmp_path / "run"
+    cassette(path)
+    request = tmp_path / "request.json"
+    request.write_text(
+        json.dumps(
+            {
+                "kind": "tool",
+                "name": "lookup",
+                "arguments": {"prompt": "changed"},
+            }
+        ),
+        encoding="utf-8",
+        newline="\n",
     )
-    other_record_result = runner.invoke(
-        app,
-        ["record", "--run-path", str(other_run_path), "--expression", "2+3"],
-    )
-    replay_result = runner.invoke(
-        app,
-        ["replay", "--run-path", str(run_path), "--expression", "2+3"],
-    )
-    show_result = runner.invoke(app, ["show", "--run-path", str(run_path)])
-    diff_result = runner.invoke(
-        app,
-        ["diff", "--left", str(run_path), "--right", str(other_run_path)],
-    )
-    validate_result = runner.invoke(app, ["validate", "--run-path", str(run_path)])
-
-    assert record_result.exit_code == 0
-    assert other_record_result.exit_code == 0
-    assert replay_result.exit_code == 0
-    assert show_result.exit_code == 0
-    assert diff_result.exit_code == 0
-    assert validate_result.exit_code == 0
+    result = runner.invoke(app, ["inspect-miss", str(path), str(request)])
+    assert result.exit_code == 1
+    assert result.output.startswith("error:")
+    assert "/arguments/prompt" in result.output
 
 
-def _snapshot(path: Path) -> dict[str, bytes]:
-    return {
-        str(file_path.relative_to(path)): file_path.read_bytes()
-        for file_path in sorted(path.rglob("*"))
-        if file_path.is_file()
-    }
+def test_inspect_miss_reports_match(tmp_path: Path) -> None:
+    path = tmp_path / "run"
+    cassette(path)
+    request = tmp_path / "request.json"
+    request.write_text(
+        json.dumps(
+            {
+                "kind": "tool",
+                "name": "lookup",
+                "arguments": {"prompt": "original"},
+            }
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+    result = runner.invoke(app, ["inspect-miss", str(path), str(request)])
+    assert result.exit_code == 0
+    assert "match: seq=0 occurrence=0" in result.output
+
+
+def test_expected_input_error_has_no_traceback(tmp_path: Path) -> None:
+    result = runner.invoke(app, ["show", str(tmp_path / "missing")])
+    assert result.exit_code == 2
+    assert result.output.startswith("error:")
+    assert "Traceback" not in result.output
+
+
+def test_old_math_commands_are_removed() -> None:
+    assert runner.invoke(app, ["record"]).exit_code != 0
+    assert runner.invoke(app, ["replay"]).exit_code != 0
+
+
+def test_validate_text_failure_and_bad_level_are_one_line(tmp_path: Path) -> None:
+    path = tmp_path / "run"
+    cassette(path)
+    invalid_level = runner.invoke(
+        app, ["validate", str(path), "--level", "not-a-level"]
+    )
+    assert invalid_level.exit_code == 2
+    assert invalid_level.output.startswith("error:")
+    (path / "interactions.jsonl").write_text("broken\n", encoding="utf-8", newline="\n")
+    invalid_cassette = runner.invoke(app, ["validate", str(path)])
+    assert invalid_cassette.exit_code == 1
+    assert invalid_cassette.output.startswith("error:")
+    assert len(invalid_cassette.output.splitlines()) == 1
+
+
+def test_mode_all_refuses_non_cassette_without_deleting(tmp_path: Path) -> None:
+    path = tmp_path / "unrelated"
+    path.mkdir()
+    important = path / "important.txt"
+    important.write_text("keep", encoding="utf-8", newline="\n")
+    with pytest.raises(CassetteOwnershipError):
+        agentrec.session(path, mode="all")
+    assert important.read_text(encoding="utf-8") == "keep"
