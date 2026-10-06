@@ -8,6 +8,13 @@ Stored strings are scanned for OpenAI and Anthropic keys, AWS access key IDs,
 GitHub and Slack tokens, JWTs, bearer tokens, and PEM private keys. Replacements
 use `[REDACTED:<rule>]`.
 
+Redaction policy version 2 also recognizes provider key echoes with asterisk-masked
+middles, including visible prefixes/suffixes in authentication-error bodies and
+session error metadata. The same patterns apply to requests, responses and headers,
+and to `validate --privacy` and `scrub`. Older policy-version-1 cassettes remain
+readable, but masked echoes may survive in them; review or scrub those private
+recordings before sharing. Recognition is best effort and does not validate a key.
+
 Email redaction and high-entropy scanning are opt-in because they can mask
 ordinary data. A `Redactor` can add named regex rules and in-memory
 `before_record_request`, `before_record_response`, and `before_record_tool`

@@ -15,7 +15,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from .cassette.model import CassetteMetadata, ErrorRecord, Interaction
 from .cassette.store import CassetteStore
 
-REDACTION_POLICY_VERSION = 1
+REDACTION_POLICY_VERSION = 2
 DEFAULT_HEADERS = frozenset(
     {
         "authorization",
@@ -27,9 +27,13 @@ DEFAULT_HEADERS = frozenset(
     }
 )
 DEFAULT_QUERY_PATTERN = re.compile(r"api_key|key|token|secret", re.IGNORECASE)
+# Provider error messages may echo a key with its middle replaced by asterisks.
+# Consume the entire echo, including visible suffixes; also catch short masked
+# forms without lowering the existing minimum for ordinary unmasked strings.
+_PROVIDER_KEY_SUFFIX = r"(?:[A-Za-z0-9_*-]{8,}|[A-Za-z0-9_-]*\*+[A-Za-z0-9_*-]*)"
 BUILTIN_PATTERNS: dict[str, re.Pattern[str]] = {
-    "anthropic_key": re.compile(r"sk-ant-[A-Za-z0-9_-]{8,}"),
-    "openai_key": re.compile(r"sk-[A-Za-z0-9_-]{8,}"),
+    "anthropic_key": re.compile(r"sk-ant-" + _PROVIDER_KEY_SUFFIX),
+    "openai_key": re.compile(r"sk-" + _PROVIDER_KEY_SUFFIX),
     "aws_key": re.compile(r"AKIA[0-9A-Z]{16}"),
     "github_token": re.compile(r"gh[pousr]_[A-Za-z0-9_]{12,}"),
     "slack_token": re.compile(r"xox[baprs]-[A-Za-z0-9-]{8,}"),

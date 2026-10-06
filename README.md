@@ -174,7 +174,7 @@ diffs through HTTPX2-native transports.
 ## Limitations
 
 - Not yet published to PyPI.
-- Tests use fake upstreams; live-provider verification, including streaming, is pending.
+- Live smoke verified against OpenAI gpt-4.1-nano (streaming + non-streaming) on 2026-10-06; Anthropic not yet verified
 - Redaction cannot prove all sensitive content is absent.
 - The format digest is not an authenticity signature.
 - Bodies, including streams, are buffered in memory; see [performance](docs/performance.md).
