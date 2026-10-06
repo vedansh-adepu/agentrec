@@ -131,3 +131,14 @@ def test_storage_tags_special_floats_without_literal_dict_collision() -> None:
     assert math.isnan(restored["nan"])
     assert restored["literal"] == {"$float": "inf"}
     assert restored["escaped"] == {"$object": [["x", 1]]}
+
+
+def test_explicit_zero_port_is_preserved_instead_of_colliding_with_default() -> None:
+    policy = MatchPolicy()
+    for scheme, default in (("http", 80), ("https", 443)):
+        assert policy.http_key("GET", f"{scheme}://example.test:0/") != policy.http_key(
+            "GET", f"{scheme}://example.test:{default}/"
+        )
+        assert policy.http_key("GET", f"{scheme}://example.test/") == policy.http_key(
+            "GET", f"{scheme}://example.test:{default}/"
+        )

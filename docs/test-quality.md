@@ -14,7 +14,7 @@ checkout is never mutated. Results remain in that temporary directory for review
 | Module | Mutants | Killed | Survived | Raw score |
 | --- | ---: | ---: | ---: | ---: |
 | canonical.py | 267 | 215 | 52 | 80.52% |
-| matching.py | 248 | 219 | 29 | 88.31% |
+| matching.py | 250 | 221 | 29 | 88.40% |
 | cassette/replay.py | 141 | 125 | 16 | 88.65% |
 
 No mutants timed out, were suspicious, or lacked a test. Scores include all

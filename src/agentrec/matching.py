@@ -139,7 +139,9 @@ class MatchPolicy:
             "method": method.upper(),
             "scheme": parsed.scheme.lower(),
             "host": parsed.hostname.lower(),
-            "port": parsed.port or (443 if parsed.scheme.lower() == "https" else 80),
+            "port": parsed.port
+            if parsed.port is not None
+            else (443 if parsed.scheme.lower() == "https" else 80),
             "path": parsed.path or "/",
             "query": [[key, value] for key, value in query],
             "headers": {
