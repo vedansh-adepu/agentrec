@@ -57,6 +57,7 @@ def test_random_cassette_json_is_read_only_or_documented_error(
         b"\xff",
         b"null",
     ],
+    ids=["deep-nesting", "oversized-integer", "invalid-utf8", "null"],
 )
 def test_deep_huge_and_invalid_encoded_metadata_is_documented_error(
     tmp_path: Path, payload: bytes
@@ -67,7 +68,9 @@ def test_deep_huge_and_invalid_encoded_metadata_is_documented_error(
 
 
 @pytest.mark.parametrize(
-    "key", ["../../outside", "/tmp/escape", "C:\\escape", "0" * 10000]
+    "key",
+    ["../../outside", "/tmp/escape", "C:\\escape", "0" * 10000],
+    ids=["parent-traversal", "absolute-posix", "windows-drive", "oversized-key"],
 )
 def test_hostile_interaction_keys_never_escape(tmp_path: Path, key: str):
     metadata = sample_metadata([sample_interaction()]).model_dump(mode="json")

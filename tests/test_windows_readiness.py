@@ -166,3 +166,10 @@ def test_windows_ipc_uses_only_fixed_loopback_and_keeps_network_guard(monkeypatc
     ):
         with pytest.raises(ValueError):
             conftest._loopback_socketpair(**kwargs)
+
+
+def test_collected_test_ids_fit_windows_environment_limit(request):
+    # pytest exports each node ID through PYTEST_CURRENT_TEST. Preserve hostile
+    # input sizes but prevent payload-generated IDs exceeding Windows' limit.
+    for item in request.session.items:
+        assert len((item.nodeid + " (teardown)").encode("utf-16-le")) // 2 < 32767
