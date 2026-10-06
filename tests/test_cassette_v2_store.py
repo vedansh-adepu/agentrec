@@ -108,7 +108,14 @@ def test_symlinked_cassette_is_refused(tmp_path: Path) -> None:
     target = tmp_path / "target"
     target.mkdir()
     link = tmp_path / "link"
-    link.symlink_to(target, target_is_directory=True)
+    try:
+        link.symlink_to(target, target_is_directory=True)
+    except OSError as exc:
+        import sys
+
+        if sys.platform == "win32":
+            pytest.skip(f"Windows symlink capability unavailable: {exc}")
+        raise
     with pytest.raises(CassetteStoreError, match="symlink"):
         CassetteStore(link)
 

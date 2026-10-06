@@ -52,7 +52,14 @@ def test_symlinked_member_and_unknown_filename_are_refused(tmp_path: Path) -> No
     path.mkdir()
     outside = tmp_path / "important"
     outside.write_text("keep")
-    (path / "cassette.json").symlink_to(outside)
+    try:
+        (path / "cassette.json").symlink_to(outside)
+    except OSError as exc:
+        import sys
+
+        if sys.platform == "win32":
+            pytest.skip(f"Windows symlink capability unavailable: {exc}")
+        raise
     store = CassetteStore(path)
     with pytest.raises(CassetteStoreError):
         store.load()

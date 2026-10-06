@@ -27,3 +27,30 @@ a successful remote run. All external actions use full verified commit SHAs.
 
 These workflows are configured, not remotely verified in this local branch.
 Publishing and Pages setup are described in [releasing](releasing.md).
+
+## Windows readiness
+
+`.gitattributes` forces LF for JSON, JSONL, Python, YAML and Markdown. Golden
+cassette integrity hashes the exact JSONL bytes, and the tests check both that
+digest and Git's checkout attributes. Filesystem-writing tests use `tmp_path`;
+absolute-looking paths in malformed payload tests are rejected input strings.
+Symlink tests skip with a capability reason only when Windows cannot create the
+link. The case-alias lock test skips on case-sensitive filesystems.
+
+Storage tests cover a transient sharing violation, a persistent replacement
+failure, closed write handles before replacement, interrupted-write temporary
+cleanup, interrupted lock cleanup and Windows directory-fsync omission.
+Catchable interruptions run cleanup; process termination or power loss can
+leave temporary files or a stale lock. Inspect those before removing them;
+agentrec does not automatically steal stale locks.
+
+On Windows, asyncio needs a TCP socketpair for local IPC. The test fixture
+constructs only a fixed loopback pair using the pre-guard socket constructor;
+it does not enable ordinary sockets or DNS. Its helper is tested with fake
+sockets. Actual Windows behavior still needs the remote matrix.
+
+The release workflow has only a `push.tags: ["v*"]` trigger. A branch push or
+pull request cannot start it. Publication additionally requires
+`PYPI_PUBLISH_ENABLED == 'true'` and uses the `pypi` environment. Required
+reviewers must be configured in repository settings; naming the environment
+in YAML does not prove that protection has been configured.
