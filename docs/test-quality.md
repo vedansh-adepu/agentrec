@@ -1,7 +1,8 @@
 # Test quality
 
 Tests block Internet sockets and use fake upstream transports. Unix sockets
-remain allowed for local asyncio event loops. Generated tests use fixed bounds,
+remain allowed for local asyncio event loops; Windows uses a fixed loopback IPC
+pair without enabling upstream sockets (see [CI](ci.md)). Generated tests use fixed bounds,
 no Hypothesis database, and no deadline so timing does not create failures.
 
 ## Mutation measurements

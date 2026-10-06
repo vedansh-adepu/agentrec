@@ -3,7 +3,10 @@
 Deterministic record/replay for AI-agent runs: model calls and tool calls, in
 order, offline.
 
-[![CI](https://github.com/vedansh-adepu/agentrec/actions/workflows/tests.yml/badge.svg)](https://github.com/vedansh-adepu/agentrec/actions/workflows/tests.yml)
+[CI workflow](https://github.com/vedansh-adepu/agentrec/actions/workflows/tests.yml)
+
+The remote CI matrix has not run for this branch. Its results will appear
+after publication.
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -160,29 +163,31 @@ filesystem transaction.
 
 ## How it compares
 
-vcrpy pioneered HTTP cassettes, and LLM-focused replay tools include openvcr,
-llm-rewind, and langchain-replay.
+For a comparison starting point, see the HTTP cassette tool vcrpy and
+LLM-focused replay tools openvcr, llm-rewind, and langchain-replay.
 agentrec's focus is model and tool boundaries in one ordered cassette,
 occurrence-correct replay, pre-persistence redaction, and step-level trajectory
-diffs through HTTPX2-native transports. It does not claim to be the first or
-the broadest recorder.
+diffs through HTTPX2-native transports.
 
 ## Limitations
 
-This branch has not been published to PyPI. The legacy v0 math prototype is retained privately under `_legacy` for
-historical tests; its Python import paths and CLI commands have been removed.
-Current tests use fake upstreams, not live OpenAI or Anthropic API calls.
-Redaction cannot prove all sensitive content is absent. The format digest is
-not an authenticity signature. Canonicalization mutation score is 80.52%, below the 85% target. The remote CI
-matrix and live-provider streaming have not been verified. Bodies, including
-streams, are buffered in memory. Streaming replay does not preserve chunk timing
-or partial chunks delivered before a recorded stream error. Older SDKs may wrap replay errors; inspect
-`__cause__`. See [test quality](docs/test-quality.md) and [performance](docs/performance.md).
+This branch has not been published to PyPI. The v0 prototype package and its
+prototype-only tests were removed; see [migration](docs/migration.md) for Git
+history. Current tests use fake upstreams, not live OpenAI or Anthropic API
+calls. Redaction cannot prove all sensitive content is absent. The format digest
+is not an authenticity signature. Canonicalization mutation score is 80.51%
+raw, below the 85% target, or 85.11% excluding 15 individually documented
+equivalent mutants. The remaining survivors change diagnostic text only.
+The remote CI matrix and live-provider streaming have not been verified.
+Bodies, including streams, are buffered in memory. Streaming replay does not
+preserve chunk timing or partial chunks delivered before a recorded stream
+error. Older SDKs may wrap replay errors; inspect `__cause__`. See
+[test quality](docs/test-quality.md) and [performance](docs/performance.md).
 
 ## Roadmap
 
-Improve malformed canonical-tag coverage, evaluate disk-backed buffering for large
-runs, and explore provider/framework adapters after the transport API stabilizes.
+Evaluate disk-backed buffering for large runs and explore provider/framework
+adapters after the transport API stabilizes.
 
 ## License
 
