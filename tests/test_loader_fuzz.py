@@ -73,7 +73,11 @@ def test_hostile_interaction_keys_never_escape(tmp_path: Path, key: str):
     metadata = sample_metadata([sample_interaction()]).model_dump(mode="json")
     item = sample_interaction().model_dump(mode="json")
     item["key"] = key
-    (tmp_path / "cassette.json").write_text(json.dumps(metadata))
-    (tmp_path / "interactions.jsonl").write_text(json.dumps(item))
+    (tmp_path / "cassette.json").write_text(
+        json.dumps(metadata), encoding="utf-8", newline="\n"
+    )
+    (tmp_path / "interactions.jsonl").write_text(
+        json.dumps(item), encoding="utf-8", newline="\n"
+    )
     with pytest.raises(AgentRecError):
         CassetteStore(tmp_path).load()

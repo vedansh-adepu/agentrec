@@ -30,9 +30,9 @@ def main() -> int:
         text = re.sub(
             r"(?m)^only_mutate = .*?$",
             f'only_mutate = ["src/agentrec/{module}.py"]',
-            configuration.read_text(),
+            configuration.read_text(encoding="utf-8"),
         )
-        configuration.write_text(text)
+        configuration.write_text(text, encoding="utf-8", newline="\n")
     print(f"Mutation workspace: {target}", flush=True)
     env = dict(os.environ)
     env["PATH"] = str(Path(sys.executable).parent) + os.pathsep + env.get("PATH", "")

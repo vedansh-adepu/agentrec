@@ -582,7 +582,7 @@ def test_nonfinite_tool_result_round_trips_through_cassette(tmp_path: Path) -> N
         original = measure(float("inf"))
         assert math.isnan(original["missing"])
     assert validate_v2_cassette(path, level="integrity")["ok"]
-    disk = (path / "interactions.jsonl").read_text()
+    disk = (path / "interactions.jsonl").read_text(encoding="utf-8")
     assert '"$float":"inf"' in disk
     assert '"$float":"-inf"' in disk
     assert '"$float":"nan"' in disk

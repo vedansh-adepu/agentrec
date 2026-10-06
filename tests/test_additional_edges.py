@@ -47,10 +47,10 @@ def test_nested_list_diffs_report_add_remove_and_escape_paths(tmp_path: Path) ->
 @pytest.mark.parametrize("mode", ["all", "none", "once", "new_episodes"])
 def test_regular_file_cannot_be_a_session(tmp_path: Path, mode: str) -> None:
     target = tmp_path / "file"
-    target.write_text("keep")
+    target.write_text("keep", encoding="utf-8", newline="\n")
     with pytest.raises(CassetteStoreError):
         agentrec.session(target, mode=mode)
-    assert target.read_text() == "keep"
+    assert target.read_text(encoding="utf-8") == "keep"
     assert not (tmp_path / ".file.agentrec.lock").exists()
 
 
@@ -142,7 +142,7 @@ def test_cli_help_debug_and_diff_text(tmp_path: Path) -> None:
     assert validate.exit_code == 0
     request = tmp_path / "request.json"
     for payload in ([], {"kind": "unknown"}, {"kind": "tool"}):
-        request.write_text(json.dumps(payload))
+        request.write_text(json.dumps(payload), encoding="utf-8", newline="\n")
         invalid = runner.invoke(app, ["inspect-miss", str(a), str(request)])
         assert invalid.exit_code == 2 and invalid.output.startswith("error:")
 
@@ -255,7 +255,9 @@ def test_cli_http_inspection_and_explicit_privacy_flag(tmp_path: Path) -> None:
                 "body": "",
                 "headers": {},
             }
-        )
+        ),
+        encoding="utf-8",
+        newline="\n",
     )
     assert runner.invoke(app, ["inspect-miss", str(path), str(request)]).exit_code == 0
     assert (

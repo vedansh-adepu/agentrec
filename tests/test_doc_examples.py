@@ -11,7 +11,7 @@ ROOT = Path(__file__).parents[1]
 
 
 def blocks(path: Path):
-    text = path.read_text()
+    text = path.read_text(encoding="utf-8")
     return [
         (text[: match.start()], match.group(1), match.group(2))
         for match in re.finditer(r"```([^\n]*)\n(.*?)```", text, re.S)

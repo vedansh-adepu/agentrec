@@ -51,7 +51,7 @@ def test_symlinked_member_and_unknown_filename_are_refused(tmp_path: Path) -> No
     path = tmp_path / "run"
     path.mkdir()
     outside = tmp_path / "important"
-    outside.write_text("keep")
+    outside.write_text("keep", encoding="utf-8", newline="\n")
     try:
         (path / "cassette.json").symlink_to(outside)
     except OSError as exc:
@@ -65,7 +65,7 @@ def test_symlinked_member_and_unknown_filename_are_refused(tmp_path: Path) -> No
         store.load()
     with pytest.raises(CassetteStoreError):
         store._file("../important")
-    assert outside.read_text() == "keep"
+    assert outside.read_text(encoding="utf-8") == "keep"
 
 
 def test_directory_sync_is_best_effort_and_file_sync_is_required(
@@ -170,7 +170,9 @@ def test_session_validates_the_same_snapshot_it_replays(
         captured = original(store)
         # A concurrent replace after the read must not substitute different records
         # between integrity validation and replay of the captured snapshot.
-        (path / "interactions.jsonl").write_text("invalid concurrent replacement\n")
+        (path / "interactions.jsonl").write_text(
+            "invalid concurrent replacement\n", encoding="utf-8", newline="\n"
+        )
         return captured
 
     monkeypatch.setattr(CassetteStore, "_load_snapshot", changing_file)

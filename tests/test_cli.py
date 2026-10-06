@@ -48,7 +48,7 @@ def test_validate_levels_and_check_failure_exit(tmp_path: Path) -> None:
     cassette(path)
     good = runner.invoke(app, ["validate", str(path), "--level", "integrity"])
     assert good.exit_code == 0
-    (path / "interactions.jsonl").write_text("broken\n")
+    (path / "interactions.jsonl").write_text("broken\n", encoding="utf-8", newline="\n")
     bad = runner.invoke(app, ["validate", str(path), "--json"])
     assert bad.exit_code == 1
     assert not json.loads(bad.output)["ok"]
@@ -60,11 +60,11 @@ def test_scrub_refuses_unowned_directory_without_deleting_anything(
     path = tmp_path / "unrelated"
     path.mkdir()
     precious = path / "precious.txt"
-    precious.write_text("do not delete")
+    precious.write_text("do not delete", encoding="utf-8", newline="\n")
     result = runner.invoke(app, ["scrub", str(path)])
     assert result.exit_code == 2
     assert result.output.startswith("error:")
-    assert precious.read_text() == "do not delete"
+    assert precious.read_text(encoding="utf-8") == "do not delete"
 
 
 def test_scrub_owned_cassette(tmp_path: Path) -> None:
@@ -86,7 +86,9 @@ def test_inspect_miss_explains_changed_tool_argument(tmp_path: Path) -> None:
                 "name": "lookup",
                 "arguments": {"prompt": "changed"},
             }
-        )
+        ),
+        encoding="utf-8",
+        newline="\n",
     )
     result = runner.invoke(app, ["inspect-miss", str(path), str(request)])
     assert result.exit_code == 1
@@ -105,7 +107,9 @@ def test_inspect_miss_reports_match(tmp_path: Path) -> None:
                 "name": "lookup",
                 "arguments": {"prompt": "original"},
             }
-        )
+        ),
+        encoding="utf-8",
+        newline="\n",
     )
     result = runner.invoke(app, ["inspect-miss", str(path), str(request)])
     assert result.exit_code == 0
@@ -132,7 +136,7 @@ def test_validate_text_failure_and_bad_level_are_one_line(tmp_path: Path) -> Non
     )
     assert invalid_level.exit_code == 2
     assert invalid_level.output.startswith("error:")
-    (path / "interactions.jsonl").write_text("broken\n")
+    (path / "interactions.jsonl").write_text("broken\n", encoding="utf-8", newline="\n")
     invalid_cassette = runner.invoke(app, ["validate", str(path)])
     assert invalid_cassette.exit_code == 1
     assert invalid_cassette.output.startswith("error:")
@@ -143,7 +147,7 @@ def test_mode_all_refuses_non_cassette_without_deleting(tmp_path: Path) -> None:
     path = tmp_path / "unrelated"
     path.mkdir()
     important = path / "important.txt"
-    important.write_text("keep")
+    important.write_text("keep", encoding="utf-8", newline="\n")
     with pytest.raises(CassetteOwnershipError):
         agentrec.session(path, mode="all")
-    assert important.read_text() == "keep"
+    assert important.read_text(encoding="utf-8") == "keep"

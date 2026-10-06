@@ -13,7 +13,9 @@ from agentrec.matching import MatchPolicyError
 
 
 def test_every_agentrec_error_has_documented_unique_code_and_hint() -> None:
-    documented = (Path(__file__).parents[1] / "docs/errors.md").read_text()
+    documented = (Path(__file__).parents[1] / "docs/errors.md").read_text(
+        encoding="utf-8"
+    )
     classes = {
         value
         for module in (errors, store)

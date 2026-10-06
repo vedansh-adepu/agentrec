@@ -7,7 +7,7 @@ from pathlib import Path
 
 def main() -> None:
     """Fail CI if fewer than 90% of the measured branches execute."""
-    totals = json.loads(Path(sys.argv[1]).read_text())["totals"]
+    totals = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["totals"]
     covered = totals["covered_branches"]
     count = totals["num_branches"]
     percentage = 100 * covered / count if count else 0

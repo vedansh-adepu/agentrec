@@ -43,9 +43,9 @@ def test_secrets_never_enter_cassette_files(tmp_path: Path) -> None:
             )
             assert response.json()["answer"] == fake_aws
 
-    disk = (path / "cassette.json").read_text() + (
+    disk = (path / "cassette.json").read_text(encoding="utf-8") + (
         path / "interactions.jsonl"
-    ).read_text()
+    ).read_text(encoding="utf-8")
     for secret in (
         fake_openai,
         fake_anthropic,
@@ -143,11 +143,11 @@ def test_scrub_reapplies_new_rules_and_updates_digest(tmp_path: Path) -> None:
             return value
 
         assert lookup("CUSTOM-123") == "CUSTOM-123"
-    before = (path / "interactions.jsonl").read_text()
+    before = (path / "interactions.jsonl").read_text(encoding="utf-8")
     assert "CUSTOM-123" in before
     changed = scrub(path, Redactor(custom_patterns={"internal": r"CUSTOM-[0-9]+"}))
     assert changed == 1
-    assert "CUSTOM-123" not in (path / "interactions.jsonl").read_text()
+    assert "CUSTOM-123" not in (path / "interactions.jsonl").read_text(encoding="utf-8")
     metadata, interactions = CassetteStore(path).load()
     assert metadata.interaction_count == 1
     assert interactions[0].key_inputs_redacted
@@ -184,7 +184,7 @@ def test_failed_session_error_is_redacted_before_metadata_write(
     assert metadata.error is not None
     assert fake not in metadata.error.message
     assert not privacy_findings(interactions, metadata)
-    assert fake not in (path / "cassette.json").read_text()
+    assert fake not in (path / "cassette.json").read_text(encoding="utf-8")
 
 
 def test_secret_object_keys_are_redacted_and_collisions_are_refused() -> None:

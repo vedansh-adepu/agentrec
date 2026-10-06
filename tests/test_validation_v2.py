@@ -25,7 +25,10 @@ def record_tool(path: Path) -> None:
 
 def mutate_interaction(path: Path, change: object, *, fix_digest: bool) -> None:
     interactions_path = path / "interactions.jsonl"
-    entries = [json.loads(line) for line in interactions_path.read_text().splitlines()]
+    entries = [
+        json.loads(line)
+        for line in interactions_path.read_text(encoding="utf-8").splitlines()
+    ]
     change(entries[0])
     data = b"".join(
         json.dumps(entry, sort_keys=True, separators=(",", ":")).encode() + b"\n"
@@ -34,9 +37,9 @@ def mutate_interaction(path: Path, change: object, *, fix_digest: bool) -> None:
     interactions_path.write_bytes(data)
     if fix_digest:
         metadata_path = path / "cassette.json"
-        metadata = json.loads(metadata_path.read_text())
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
         metadata["content_sha256"] = hashlib.sha256(data).hexdigest()
-        metadata_path.write_text(json.dumps(metadata))
+        metadata_path.write_text(json.dumps(metadata), encoding="utf-8", newline="\n")
 
 
 def test_pristine_cassette_passes_every_level(tmp_path: Path) -> None:

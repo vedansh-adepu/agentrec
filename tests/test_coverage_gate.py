@@ -24,7 +24,9 @@ def test_branch_gate_threshold(
                     "percent_covered": 99,
                 }
             }
-        )
+        ),
+        encoding="utf-8",
+        newline="\n",
     )
     result = subprocess.run(
         [

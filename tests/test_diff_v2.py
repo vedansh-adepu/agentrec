@@ -68,14 +68,14 @@ def test_duration_delta_does_not_count_as_behavior_change(tmp_path: Path) -> Non
     record(left, "prompt", "answer")
     record(right, "prompt", "answer")
     file = right / "interactions.jsonl"
-    entry = json.loads(file.read_text())
+    entry = json.loads(file.read_text(encoding="utf-8"))
     entry["duration_ms"] += 100
     data = (json.dumps(entry, sort_keys=True, separators=(",", ":")) + "\n").encode()
     file.write_bytes(data)
     metadata_file = right / "cassette.json"
-    metadata = json.loads(metadata_file.read_text())
+    metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
     metadata["content_sha256"] = hashlib.sha256(data).hexdigest()
-    metadata_file.write_text(json.dumps(metadata))
+    metadata_file.write_text(json.dumps(metadata), encoding="utf-8", newline="\n")
     result = diff_v2_cassettes(left, right)
     assert not result["behavior_changed"]
     assert result["changed"] == 0
@@ -104,7 +104,9 @@ def test_cli_refuses_structurally_invalid_v2_cassette(tmp_path: Path) -> None:
     left, right = tmp_path / "left", tmp_path / "right"
     record(left, "prompt", "answer")
     record(right, "prompt", "answer")
-    (right / "interactions.jsonl").write_text("not json\n")
+    (right / "interactions.jsonl").write_text(
+        "not json\n", encoding="utf-8", newline="\n"
+    )
     result = CliRunner().invoke(app, ["diff", str(left), str(right)])
     assert result.exit_code == 2
     assert "error:" in result.output

@@ -89,11 +89,11 @@ def test_unowned_directory_is_never_replaced_or_deleted(tmp_path: Path) -> None:
     target = tmp_path / "notes"
     target.mkdir()
     important = target / "important.txt"
-    important.write_text("keep")
+    important.write_text("keep", encoding="utf-8", newline="\n")
     store = CassetteStore(target)
     with pytest.raises(CassetteOwnershipError):
         store.save(sample_metadata([]), [], replace=True)
-    assert important.read_text() == "keep"
+    assert important.read_text(encoding="utf-8") == "keep"
 
 
 def test_public_key_path_rejects_traversal(tmp_path: Path) -> None:
@@ -130,7 +130,9 @@ def test_second_writer_is_rejected(tmp_path: Path) -> None:
 def test_v1_cassette_has_clear_migration_error(tmp_path: Path) -> None:
     run = tmp_path / "v1"
     run.mkdir()
-    (run / "metadata.json").write_text('{"schema_version":1}')
+    (run / "metadata.json").write_text(
+        '{"schema_version":1}', encoding="utf-8", newline="\n"
+    )
     with pytest.raises(CassetteVersionError, match="re-record"):
         CassetteStore(run).load()
 
