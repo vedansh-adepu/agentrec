@@ -11,7 +11,8 @@ GitHub environment with a required reviewer. No stored PyPI API token is needed.
 is guarded by it being exactly `true`.
 Enable GitHub Pages using GitHub Actions before the Pages workflow is used.
 
-The release workflow only publishes after its environment approval. It uses OIDC
+After the required-reviewer environment is configured, publishing waits for its
+approval. The repository-variable guard is also required. The workflow uses OIDC
 Trusted Publishing and requests attestations. Tagging v1.0.0rc1 triggers the
 workflow, so finish setup and require environment approval BEFORE creating/pushing
 that tag. Do not treat a tag as a harmless preview. For a local dry-run, build a

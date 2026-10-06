@@ -3,9 +3,15 @@ from pathlib import Path
 
 import pytest
 
+from agentrec._legacy.models import (
+    CASSETTE_SCHEMA_VERSION,
+    CachedInteraction,
+    RunRecord,
+    Step,
+    Usage,
+)
+from agentrec._legacy.store import CassetteStore
 from agentrec.errors import CassetteNotFoundError, CassetteValidationError
-from agentrec.models import CASSETTE_SCHEMA_VERSION, CachedInteraction, RunRecord, Step, Usage
-from agentrec.store import CassetteStore
 
 
 def make_run() -> RunRecord:
@@ -132,7 +138,7 @@ def test_validate_raises_when_trace_is_missing(tmp_path: Path) -> None:
     store.initialize(make_run())
     store.trace_path.unlink()
 
-    with pytest.raises(CassetteValidationError, match="Missing trace.jsonl"):
+    with pytest.raises(CassetteValidationError, match=r"Missing trace\.jsonl"):
         store.validate()
 
 
@@ -143,5 +149,7 @@ def test_validate_raises_for_unsupported_schema_version(tmp_path: Path) -> None:
     payload["schema_version"] = "999"
     store.metadata_path.write_text(json.dumps(payload), encoding="utf-8")
 
-    with pytest.raises(CassetteValidationError, match="Unsupported cassette schema version"):
+    with pytest.raises(
+        CassetteValidationError, match="Unsupported cassette schema version"
+    ):
         store.validate()

@@ -1,16 +1,16 @@
-from pathlib import Path
 import inspect
 import socket
+from pathlib import Path
 
 import pytest
 
-from agentrec.core import AgentRecorder, AgentReplayer
+from agentrec._legacy.core import AgentRecorder, AgentReplayer
+from agentrec._legacy.hashing import hash_request
+from agentrec._legacy.models import RunRecord
+from agentrec._legacy.providers import FakeModelProvider, ModelRequest
+from agentrec._legacy.store import CassetteStore
+from agentrec._legacy.tools import default_tool_registry
 from agentrec.errors import ReplayMissError
-from agentrec.hashing import hash_request
-from agentrec.models import RunRecord
-from agentrec.providers import FakeModelProvider, ModelRequest
-from agentrec.store import CassetteStore
-from agentrec.tools import default_tool_registry
 
 
 def make_model_request(content: str = "add 2 and 3") -> ModelRequest:

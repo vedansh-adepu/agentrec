@@ -1,11 +1,11 @@
-from pathlib import Path
 import socket
+from pathlib import Path
 
 import pytest
 
+from agentrec._legacy.examples import record_math_flow, replay_math_flow
+from agentrec._legacy.store import CassetteStore
 from agentrec.errors import ReplayMissError
-from agentrec.examples import record_math_flow, replay_math_flow
-from agentrec.store import CassetteStore
 
 
 def snapshot_files(path: Path) -> dict[Path, bytes]:

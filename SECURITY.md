@@ -7,7 +7,7 @@ Do not put real credentials or private cassettes into a public issue.
 Redaction runs before persistence and recognizes configured header/query names and
 known token patterns. It reduces accidental disclosure; it cannot recognize every
 secret or all PII. Email and entropy detection are off by default. Binary/base64
-bodies, arbitrary passwords, encoded secrets, and secrets in object keys require
+bodies, arbitrary passwords, encoded secrets, and unrecognized sensitive fields require
 application review/custom hooks. Hooks receive unredacted values in memory.
 
 Cassettes can contain prompts, tool arguments/results, model output, URLs, and error

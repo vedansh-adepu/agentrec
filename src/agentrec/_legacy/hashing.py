@@ -6,7 +6,7 @@ import hashlib
 import json
 from typing import Any
 
-from agentrec.normalizer import normalize_request
+from agentrec._legacy.normalizer import normalize_request
 
 
 def hash_request(data: dict[str, Any]) -> str:

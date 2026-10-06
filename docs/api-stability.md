@@ -4,7 +4,8 @@ Package releases follow SemVer after 1.0.0; release candidates may change before
 the final release. The supported Python API is exactly `agentrec.__all__` plus
 the documented Session methods/properties and configuration class methods.
 Other modules are implementation details and their direct imports are unsupported.
-Legacy v0 modules remain for historical tests, not as a supported 1.x API.
+Legacy v0 code lives under `_legacy` for historical tests; its former import
+paths are removed and it is not a supported 1.x API.
 
 Public names: AgentRecError, MatchPolicy, RecordMode, Redactor, ReplayExhaustedError,
 ReplayMissError, ReplayOrderError, ReplayedToolError, ReplayedTransportError, Session,

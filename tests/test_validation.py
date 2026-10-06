@@ -1,12 +1,14 @@
 import json
-from pathlib import Path
 import socket
+from pathlib import Path
 
-from agentrec.examples import record_math_flow
-from agentrec.validation import validate_cassette
+from agentrec._legacy.examples import record_math_flow
+from agentrec._legacy.validation import validate_cassette
 
 
-def test_validate_cassette_returns_ok_for_valid_recorded_cassette(tmp_path: Path) -> None:
+def test_validate_cassette_returns_ok_for_valid_recorded_cassette(
+    tmp_path: Path,
+) -> None:
     run_path = tmp_path / "math_run"
     record_math_flow(run_path, "2+3")
 
@@ -16,7 +18,9 @@ def test_validate_cassette_returns_ok_for_valid_recorded_cassette(tmp_path: Path
     assert result["errors"] == []
 
 
-def test_validate_cassette_valid_summary_includes_expected_fields(tmp_path: Path) -> None:
+def test_validate_cassette_valid_summary_includes_expected_fields(
+    tmp_path: Path,
+) -> None:
     run_path = tmp_path / "math_run"
     record_math_flow(run_path, "2+3")
 
@@ -72,7 +76,9 @@ def test_validate_cassette_missing_schema_version_returns_error(tmp_path: Path) 
     assert any("Missing metadata schema_version" in error for error in result["errors"])
 
 
-def test_validate_cassette_unsupported_schema_version_returns_error(tmp_path: Path) -> None:
+def test_validate_cassette_unsupported_schema_version_returns_error(
+    tmp_path: Path,
+) -> None:
     run_path = tmp_path / "math_run"
     record_math_flow(run_path, "2+3")
     metadata = json.loads((run_path / "metadata.json").read_text(encoding="utf-8"))
@@ -82,7 +88,9 @@ def test_validate_cassette_unsupported_schema_version_returns_error(tmp_path: Pa
     result = validate_cassette(run_path)
 
     assert result["ok"] is False
-    assert any("Unsupported metadata schema_version" in error for error in result["errors"])
+    assert any(
+        "Unsupported metadata schema_version" in error for error in result["errors"]
+    )
 
 
 def test_validate_cassette_malformed_trace_returns_error(tmp_path: Path) -> None:
@@ -96,7 +104,9 @@ def test_validate_cassette_malformed_trace_returns_error(tmp_path: Path) -> None
     assert any("Invalid trace.jsonl" in error for error in result["errors"])
 
 
-def test_validate_cassette_out_of_order_trace_indexes_return_error(tmp_path: Path) -> None:
+def test_validate_cassette_out_of_order_trace_indexes_return_error(
+    tmp_path: Path,
+) -> None:
     run_path = tmp_path / "math_run"
     record_math_flow(run_path, "2+3")
     lines = (run_path / "trace.jsonl").read_text(encoding="utf-8").splitlines()
@@ -111,7 +121,9 @@ def test_validate_cassette_out_of_order_trace_indexes_return_error(tmp_path: Pat
     assert any("step indexes must be ordered" in error for error in result["errors"])
 
 
-def test_validate_cassette_malformed_response_json_returns_error(tmp_path: Path) -> None:
+def test_validate_cassette_malformed_response_json_returns_error(
+    tmp_path: Path,
+) -> None:
     run_path = tmp_path / "math_run"
     record_math_flow(run_path, "2+3")
     response_file = next((run_path / "responses").glob("*.json"))
@@ -123,7 +135,9 @@ def test_validate_cassette_malformed_response_json_returns_error(tmp_path: Path)
     assert any("Invalid response file" in error for error in result["errors"])
 
 
-def test_validate_cassette_response_filename_mismatch_returns_error(tmp_path: Path) -> None:
+def test_validate_cassette_response_filename_mismatch_returns_error(
+    tmp_path: Path,
+) -> None:
     run_path = tmp_path / "math_run"
     record_math_flow(run_path, "2+3")
     response_file = next((run_path / "responses").glob("*_tool.json"))

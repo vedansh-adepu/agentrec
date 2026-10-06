@@ -5,11 +5,11 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from agentrec.hashing import hash_request
-from agentrec.models import CachedInteraction, RunRecord, Step
-from agentrec.providers.base import ModelProvider, ModelRequest, ModelResponse
-from agentrec.store import CassetteStore
-from agentrec.tools import ToolRegistry, ToolResult
+from agentrec._legacy.hashing import hash_request
+from agentrec._legacy.models import CachedInteraction, RunRecord, Step
+from agentrec._legacy.providers.base import ModelProvider, ModelRequest, ModelResponse
+from agentrec._legacy.store import CassetteStore
+from agentrec._legacy.tools import ToolRegistry, ToolResult
 
 
 class AgentRecorder:

@@ -5,11 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from agentrec.core import AgentRecorder, AgentReplayer
-from agentrec.models import RunRecord
-from agentrec.providers import FakeModelProvider, ModelRequest
-from agentrec.store import CassetteStore
-from agentrec.tools import default_tool_registry
+from agentrec._legacy.core import AgentRecorder, AgentReplayer
+from agentrec._legacy.models import RunRecord
+from agentrec._legacy.providers import FakeModelProvider, ModelRequest
+from agentrec._legacy.store import CassetteStore
+from agentrec._legacy.tools import default_tool_registry
 
 
 def record_math_flow(run_path: str | Path, expression: str = "2+3") -> dict[str, Any]:

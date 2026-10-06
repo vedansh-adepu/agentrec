@@ -6,8 +6,13 @@ import json
 from pathlib import Path
 from typing import Literal
 
+from agentrec._legacy.models import (
+    CASSETTE_SCHEMA_VERSION,
+    CachedInteraction,
+    RunRecord,
+    Step,
+)
 from agentrec.errors import CassetteNotFoundError, CassetteValidationError
-from agentrec.models import CASSETTE_SCHEMA_VERSION, CachedInteraction, RunRecord, Step
 
 
 class CassetteStore:
@@ -40,7 +45,9 @@ class CassetteStore:
         """Read cassette run metadata."""
 
         if not self.metadata_path.exists():
-            raise CassetteNotFoundError(f"Missing cassette metadata: {self.metadata_path}")
+            raise CassetteNotFoundError(
+                f"Missing cassette metadata: {self.metadata_path}"
+            )
         return RunRecord.model_validate_json(
             self.metadata_path.read_text(encoding="utf-8"),
         )
@@ -105,17 +112,25 @@ class CassetteStore:
         """Validate the required cassette folder structure."""
 
         if not self.metadata_path.is_file():
-            raise CassetteValidationError(f"Missing metadata.json: {self.metadata_path}")
+            raise CassetteValidationError(
+                f"Missing metadata.json: {self.metadata_path}"
+            )
         if not self.trace_path.is_file():
             raise CassetteValidationError(f"Missing trace.jsonl: {self.trace_path}")
         if not self.responses_path.is_dir():
-            raise CassetteValidationError(f"Missing responses directory: {self.responses_path}")
+            raise CassetteValidationError(
+                f"Missing responses directory: {self.responses_path}"
+            )
         if not self.artifacts_path.is_dir():
-            raise CassetteValidationError(f"Missing artifacts directory: {self.artifacts_path}")
+            raise CassetteValidationError(
+                f"Missing artifacts directory: {self.artifacts_path}"
+            )
         try:
             metadata = json.loads(self.metadata_path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
-            raise CassetteValidationError(f"Malformed metadata.json: {self.metadata_path}") from exc
+            raise CassetteValidationError(
+                f"Malformed metadata.json: {self.metadata_path}"
+            ) from exc
 
         schema_version = metadata.get("schema_version")
         if schema_version != CASSETTE_SCHEMA_VERSION:
@@ -124,5 +139,7 @@ class CassetteStore:
                 f"expected {CASSETTE_SCHEMA_VERSION!r}",
             )
 
-    def _interaction_path(self, request_hash: str, kind: Literal["model", "tool"]) -> Path:
+    def _interaction_path(
+        self, request_hash: str, kind: Literal["model", "tool"]
+    ) -> Path:
         return self.responses_path / f"{request_hash}_{kind}.json"

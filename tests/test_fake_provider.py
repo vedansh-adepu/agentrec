@@ -2,7 +2,7 @@ import socket
 
 import pytest
 
-from agentrec.providers import FakeModelProvider, ModelRequest
+from agentrec._legacy.providers import FakeModelProvider, ModelRequest
 
 
 def make_request(content: str = "add 2 and 3") -> ModelRequest:

@@ -5,3 +5,8 @@ schema v2. The old v1 layout cannot preserve distinct occurrences of an
 identical request, so automatic conversion would invent an ordering guarantee
 that the data does not contain. Keep a backup of any historical v1 cassette
 needed for inspection with the 0.x release.
+
+The former 0.x Python imports (`agentrec.core`, `agentrec.store`, provider/math
+helpers, and old diff/validation functions) are removed from the supported
+namespace. Use the Session API and current CLI. Historical code is retained under
+`_legacy` solely for regression tests; do not build applications on that private API.

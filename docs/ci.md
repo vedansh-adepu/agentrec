@@ -16,7 +16,8 @@ never reaches the fake or live upstream. Keep private cassettes out of Git and
 review any cassette before committing it.
 
 CI starts `coverage run -m pytest` before pytest plugins import agentrec, then
-requires a 90% branch-enabled coverage report. Starting coverage only after
+requires both a 90% overall branch-enabled report and 90% branch-only coverage
+from coverage.py JSON totals. Starting coverage only after
 pytest11 imports would miss import-time code. The matrix covers three Python
 versions on three OSes; quality checks run ruff, strict mypy, and strict MkDocs.
 Packaging builds wheel/sdist and tests the installed wheel in a fresh venv with

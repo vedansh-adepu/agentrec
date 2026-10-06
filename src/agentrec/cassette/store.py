@@ -8,7 +8,7 @@ import os
 import re
 import tempfile
 from collections.abc import Iterator, Sequence
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -149,6 +149,7 @@ class CassetteStore:
         interactions: Sequence[Interaction],
         *,
         replace: bool = False,
+        _lock_held: bool = False,
     ) -> None:
         """Finalize two files, writing interactions first and metadata last."""
         if self.path.is_symlink():
@@ -184,7 +185,7 @@ class CassetteStore:
             raise CassetteStoreError(
                 "metadata content hash does not match interactions"
             )
-        with self.writer_lock():
+        with nullcontext() if _lock_held else self.writer_lock():
             if self.path.is_symlink():
                 raise CassetteStoreError("cassette path must not be a symlink")
             if self.path.exists() and any(self.path.iterdir()):
@@ -211,6 +212,11 @@ class CassetteStore:
 
     def load(self) -> tuple[CassetteMetadata, list[Interaction]]:
         """Load schema v2, rejecting unsupported versions and invalid records."""
+        metadata, interactions, _data = self._load_snapshot()
+        return metadata, interactions
+
+    def _load_snapshot(self) -> tuple[CassetteMetadata, list[Interaction], bytes]:
+        """Return parsed records and the exact bytes they were parsed from."""
         if (
             not self._file("cassette.json").exists()
             and (self.path / "metadata.json").exists()
@@ -238,12 +244,9 @@ class CassetteStore:
             )
         try:
             metadata = CassetteMetadata.model_validate_json(metadata_bytes)
-            lines = (
-                self._file("interactions.jsonl")
-                .read_text(encoding="utf-8")
-                .splitlines()
-            )
+            data = self._file("interactions.jsonl").read_bytes()
+            lines = data.decode("utf-8").splitlines()
             interactions = [Interaction.model_validate_json(line) for line in lines]
         except (OSError, ValueError, ValidationError, RecursionError) as exc:
             raise CassetteStoreError("invalid schema-v2 cassette contents") from exc
-        return metadata, interactions
+        return metadata, interactions, data

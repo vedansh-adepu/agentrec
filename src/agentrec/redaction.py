@@ -105,7 +105,13 @@ class Redactor:
         if isinstance(value, list):
             return [self.redact_value(item) for item in value]
         if isinstance(value, dict):
-            return {key: self.redact_value(item) for key, item in value.items()}
+            result: dict[str, Any] = {}
+            for key, item in value.items():
+                replacement = self.redact_text(key)
+                if replacement in result:
+                    raise ValueError("redaction would collapse distinct object keys")
+                result[replacement] = self.redact_value(item)
+            return result
         return value
 
     def redact_headers(self, headers: Mapping[str, str]) -> dict[str, str]:
@@ -185,7 +191,9 @@ def privacy_findings(
                 visit(item, f"{path}/{index}")
         elif isinstance(value, dict):
             for key, item in value.items():
-                visit(item, f"{path}/{key}")
+                visit(key, f"{path}/<object-key>")
+                safe_key = Redactor().redact_text(key)
+                visit(item, f"{path}/{safe_key}")
 
     if metadata and metadata.error:
         visit(metadata.error.message, "/cassette/error")

@@ -44,3 +44,5 @@ site/
 mutants/
 *.sarif
 .wheel-venv/
+
+/coverage.json

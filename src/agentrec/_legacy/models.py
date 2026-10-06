@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -58,6 +58,6 @@ class RunRecord(AgentRecModel):
     steps: list[Step] = Field(default_factory=list)
     final_output: str | None = None
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
     )
     metadata: dict[str, Any] = Field(default_factory=dict)

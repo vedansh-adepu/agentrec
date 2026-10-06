@@ -3,13 +3,15 @@ from pathlib import Path
 
 import pytest
 
-from agentrec.diff import diff_cassettes
+from agentrec._legacy.diff import diff_cassettes
+from agentrec._legacy.models import RunRecord, Step, Usage
+from agentrec._legacy.store import CassetteStore
 from agentrec.errors import CassetteError
-from agentrec.models import RunRecord, Step, Usage
-from agentrec.store import CassetteStore
 
 
-def test_diff_cassettes_returns_unchanged_for_equivalent_cassettes(tmp_path: Path) -> None:
+def test_diff_cassettes_returns_unchanged_for_equivalent_cassettes(
+    tmp_path: Path,
+) -> None:
     left = _write_cassette(tmp_path / "left")
     right = _write_cassette(tmp_path / "right")
 

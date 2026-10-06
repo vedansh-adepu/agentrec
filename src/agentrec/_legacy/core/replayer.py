@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from agentrec._legacy.hashing import hash_request
+from agentrec._legacy.providers.base import ModelRequest, ModelResponse
+from agentrec._legacy.store import CassetteStore
+from agentrec._legacy.tools import ToolResult
 from agentrec.errors import CassetteNotFoundError, ReplayMissError
-from agentrec.hashing import hash_request
-from agentrec.providers.base import ModelRequest, ModelResponse
-from agentrec.store import CassetteStore
-from agentrec.tools import ToolResult
 
 
 class AgentReplayer:

@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from agentrec.examples import record_math_flow, replay_math_flow
+from agentrec._legacy.examples import record_math_flow, replay_math_flow
 
 
 def main() -> None:

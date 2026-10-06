@@ -9,14 +9,14 @@ or external services are used. The script prints JSON and uses temporary cassett
 
 | Interactions | Pass-through µs/request | Record µs/request | Record overhead µs/request | Replay µs/request | Load + index ms | Session open ms | Loader/index peak MiB |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 100 | 33.781 | 176.569 | 142.788 | 69.751 | 0.893 | 3.767 | 0.389 |
-| 1000 | 34.485 | 176.931 | 142.446 | 70.346 | 7.124 | 34.804 | 3.865 |
-| 10000 | 34.066 | 181.449 | 147.383 | 70.255 | 80.445 | 397.975 | 38.737 |
+| 100 | 36.093 | 197.28 | 161.187 | 70.753 | 0.888 | 2.843 | 0.455 |
+| 1000 | 34.785 | 200.021 | 165.236 | 87.962 | 7.297 | 28.133 | 4.527 |
+| 10000 | 38.869 | 230.673 | 191.804 | 75.469 | 103.355 | 282.388 | 45.38 |
 
 ## Interpretation
 
-At 10,000 interactions, replay is 0.070255 ms/request, below the 1 ms target;
-load plus index is 0.080445 s, below the 1 s target locally. Full session opening
+At 10,000 interactions, replay is 0.075469 ms/request, below the 1 ms target;
+load plus index is 0.103355 s, below the 1 s target locally. Full session opening
 includes integrity validation and is separately reported. The CI-runner target
 has not been measured; run the same script there before claiming it is met.
 

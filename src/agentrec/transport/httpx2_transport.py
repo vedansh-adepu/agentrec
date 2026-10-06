@@ -127,7 +127,9 @@ class RecordReplayTransport(httpx2.BaseTransport):
             return _replay_response(played, request)
         if not self.session._recording_allowed():
             raise ReplayMissError(f"HTTP replay miss: {request.method} {request.url}")
-        inner = self.inner or httpx2.HTTPTransport()
+        if self.inner is None:
+            self.inner = httpx2.HTTPTransport()
+        inner = self.inner
         forwarded = httpx2.Request(
             request.method,
             request.url,
@@ -155,6 +157,17 @@ class RecordReplayTransport(httpx2.BaseTransport):
         )
         if streamed:
 
+            def failed(exc: httpx2.RequestError) -> None:
+                self.session._append(
+                    "http",
+                    key,
+                    record,
+                    None,
+                    ErrorRecord(type=type(exc).__name__, message=str(exc)),
+                    started,
+                    (time.perf_counter() - tick) * 1000,
+                )
+
             def complete(body: bytes) -> None:
                 _warn_large(self.session, "response", body)
                 self.session._append(
@@ -170,7 +183,7 @@ class RecordReplayTransport(httpx2.BaseTransport):
             return httpx2.Response(
                 response.status_code,
                 headers=_response_headers(response),
-                stream=RecordingStream(response, complete),
+                stream=RecordingStream(response, complete, failed),
                 request=request,
             )
         body = response.read()
@@ -192,7 +205,7 @@ class RecordReplayTransport(httpx2.BaseTransport):
         )
 
     def close(self) -> None:
-        """Close an explicitly supplied upstream transport."""
+        """Close the supplied or lazily created upstream transport."""
         if self.inner is not None:
             self.inner.close()
 
@@ -221,7 +234,9 @@ class AsyncRecordReplayTransport(httpx2.AsyncBaseTransport):
             return _replay_response(played, request)
         if not self.session._recording_allowed():
             raise ReplayMissError(f"HTTP replay miss: {request.method} {request.url}")
-        inner = self.inner or httpx2.AsyncHTTPTransport()
+        if self.inner is None:
+            self.inner = httpx2.AsyncHTTPTransport()
+        inner = self.inner
         forwarded = httpx2.Request(
             request.method,
             request.url,
@@ -249,6 +264,17 @@ class AsyncRecordReplayTransport(httpx2.AsyncBaseTransport):
         )
         if streamed:
 
+            def failed(exc: httpx2.RequestError) -> None:
+                self.session._append(
+                    "http",
+                    key,
+                    record,
+                    None,
+                    ErrorRecord(type=type(exc).__name__, message=str(exc)),
+                    started,
+                    (time.perf_counter() - tick) * 1000,
+                )
+
             def complete(body: bytes) -> None:
                 _warn_large(self.session, "response", body)
                 self.session._append(
@@ -264,7 +290,7 @@ class AsyncRecordReplayTransport(httpx2.AsyncBaseTransport):
             return httpx2.Response(
                 response.status_code,
                 headers=_response_headers(response),
-                stream=AsyncRecordingStream(response, complete),
+                stream=AsyncRecordingStream(response, complete, failed),
                 request=request,
             )
         body = await response.aread()
@@ -286,6 +312,6 @@ class AsyncRecordReplayTransport(httpx2.AsyncBaseTransport):
         )
 
     async def aclose(self) -> None:
-        """Close an explicitly supplied async upstream transport."""
+        """Close the supplied or lazily created async upstream transport."""
         if self.inner is not None:
             await self.inner.aclose()

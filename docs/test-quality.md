@@ -52,3 +52,9 @@ Only local macOS Python 3.11 and 3.13 were executed during development; remote
 matrix success must be checked after the branch is published. Windows storage
 behavior is also simulated by tests for one PermissionError retry and omitted
 directory fsync. Simulations do not substitute for an actual Windows runner.
+
+Final local hardening also exercises writer lifetime/failed-finalize cleanup,
+progressive and early-closed SSE streams in both transport families, midstream
+timeouts, async tool errors, nested diff alignment, privacy-safe object keys, and
+interrupted two-file replacement. The test suite starts coverage before plugin
+imports; CI checks branch coverage separately from combined line/branch coverage.

@@ -1,7 +1,7 @@
 """Model provider interfaces and implementations."""
 
-from agentrec.providers.base import ModelProvider, ModelRequest, ModelResponse
-from agentrec.providers.fake import FakeModelProvider
+from agentrec._legacy.providers.base import ModelProvider, ModelRequest, ModelResponse
+from agentrec._legacy.providers.fake import FakeModelProvider
 
 __all__ = [
     "FakeModelProvider",

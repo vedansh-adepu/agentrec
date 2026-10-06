@@ -1,4 +1,4 @@
-from agentrec.hashing import hash_request
+from agentrec._legacy.hashing import hash_request
 
 
 def test_same_request_gives_same_hash() -> None:

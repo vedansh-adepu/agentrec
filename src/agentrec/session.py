@@ -10,19 +10,23 @@ import logging
 import threading
 from collections import defaultdict
 from collections.abc import Callable
+from contextlib import AbstractContextManager
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal, ParamSpec, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Literal, ParamSpec, TypeVar, cast
 
 from .canonical import decode_special_values, encode_special_values
 from .cassette.model import CassetteMetadata, ErrorRecord, Interaction, PolicyRecord
 from .cassette.replay import ReplayIndex
 from .cassette.store import CassetteOwnershipError, CassetteStore, CassetteStoreError
-from .errors import ReplayExhaustedError, ReplayMissError
+from .errors import ReplayExhaustedError, ReplayMissError, ReplayOrderError
 from .matching import MatchPolicy
 from .modes import RecordMode, resolve_mode
 from .redaction import REDACTION_POLICY_VERSION, Redactor
 from .validation import validate_v2_cassette
+
+if TYPE_CHECKING:
+    import httpx2
 
 LOGGER = logging.getLogger("agentrec")
 
@@ -69,16 +73,51 @@ class Session:
             else fail_on_unplayed
         )
         self._replay: ReplayIndex | None = None
+        self._writer: AbstractContextManager[None] | None = None
+        if self.mode in {RecordMode.ALL, RecordMode.NEW_EPISODES} or (
+            self.mode is RecordMode.ONCE and not self.path.exists()
+        ):
+            self._writer = self.store.writer_lock()
+            self._writer.__enter__()
+        try:
+            self._load_existing(
+                strict_order,
+                allow_playback_repeats,
+                allow_failed,
+                allow_policy_mismatch,
+            )
+        except BaseException:
+            self._release_writer()
+            raise
+
+    def _release_writer(self) -> None:
+        if self._writer is not None:
+            self._writer.__exit__(None, None, None)
+            self._writer = None
+
+    def _load_existing(
+        self,
+        strict_order: bool,
+        allow_playback_repeats: bool,
+        allow_failed: bool,
+        allow_policy_mismatch: bool,
+    ) -> None:
+        if self.path.exists() and not self.path.is_dir():
+            raise CassetteStoreError("cassette path is not a directory")
         if self.mode is RecordMode.ALL:
             if self.path.exists() and any(self.path.iterdir()):
                 self.store.require_owned()
         elif self.path.exists():
-            metadata, interactions = self.store.load()
-            validation = validate_v2_cassette(self.path, level="integrity")
+            metadata, interactions, raw = self.store._load_snapshot()
+            validation = validate_v2_cassette(
+                self.path, level="integrity", _loaded=(metadata, interactions, raw)
+            )
             if not validation["ok"]:
                 raise CassetteStoreError(
                     "cassette integrity failed: " + "; ".join(validation["errors"])
                 )
+            if metadata.status == "recording":
+                raise CassetteStoreError("recording cassette is not finalized")
             if metadata.status == "failed" and not allow_failed:
                 raise CassetteOwnershipError(
                     "failed cassette requires allow_failed=True"
@@ -111,6 +150,8 @@ class Session:
         return self._replay.all_played if self._replay else True
 
     def _lookup(self, key: str, request: dict[str, Any]) -> Interaction | None:
+        if self._closed:
+            raise RuntimeError("session is closed")
         if self._replay is None:
             return None
         with self._lock:
@@ -118,6 +159,8 @@ class Session:
                 item = self._replay.play(key, request)
                 LOGGER.debug("replay hit key=%s seq=%d", key, item.seq)
                 return item
+            except ReplayOrderError:
+                raise
             except (ReplayMissError, ReplayExhaustedError):
                 LOGGER.debug("replay miss key=%s mode=%s", key, self.mode.value)
                 if self.mode is RecordMode.NEW_EPISODES:
@@ -200,25 +243,37 @@ class Session:
             or (self.mode is RecordMode.ONCE and self._replay is None)
         )
 
-    def transport(self, inner: Any = None) -> Any:
+    def transport(
+        self, inner: httpx2.BaseTransport | None = None
+    ) -> httpx2.BaseTransport:
         """Return an httpx2 transport for a sync SDK client."""
         from .transport.httpx2_transport import RecordReplayTransport
 
         return RecordReplayTransport(self, inner=inner)
 
-    def async_transport(self, inner: Any = None) -> Any:
+    def async_transport(
+        self, inner: httpx2.AsyncBaseTransport | None = None
+    ) -> httpx2.AsyncBaseTransport:
         """Return an httpx2 transport for an async SDK client."""
         from .transport.httpx2_transport import AsyncRecordReplayTransport
 
         return AsyncRecordReplayTransport(self, inner=inner)
 
     def tool(self, function: Callable[P, R]) -> Callable[P, R]:
-        """Decorate a sync or async tool with argument snapshot and outcome replay."""
-        from ._tool_decorator import decorate_tool
+        """Snapshot arguments and replay outcomes without executing the tool body."""
+        from .tools import decorate_tool
 
         return decorate_tool(self, function)
 
     def close(self, error: BaseException | None = None) -> None:
+        """Finalize once, release the writer lease, and enforce replay accounting."""
+        with self._lock:
+            try:
+                self._finalize(error)
+            finally:
+                self._release_writer()
+
+    def _finalize(self, error: BaseException | None = None) -> None:
         """Finalize a writable session once and enforce optional play accounting."""
         if self._closed:
             return
@@ -264,6 +319,7 @@ class Session:
                     metadata,
                     interactions,
                     replace=self._metadata is not None or self.mode is RecordMode.ALL,
+                    _lock_held=self._writer is not None,
                 )
         if self.fail_on_unplayed and self._replay and error is None:
             self._replay.assert_all_played()

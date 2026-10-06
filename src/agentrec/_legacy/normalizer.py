@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-
 UNSTABLE_FIELD_NAMES = {
     "created_at",
     "random_id",

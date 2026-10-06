@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import httpx2
+import pytest
 
 import agentrec
 from agentrec.cassette.store import CassetteStore
@@ -184,3 +185,12 @@ def test_failed_session_error_is_redacted_before_metadata_write(
     assert fake not in metadata.error.message
     assert not privacy_findings(interactions, metadata)
     assert fake not in (path / "cassette.json").read_text()
+
+
+def test_secret_object_keys_are_redacted_and_collisions_are_refused() -> None:
+    active = Redactor()
+    assert active.redact_value({"sk-FAKEFAKEFAKEFAKE": "value"}) == {
+        "[REDACTED:openai_key]": "value"
+    }
+    with pytest.raises(ValueError, match="collapse"):
+        active.redact_value({"sk-FAKEFAKEFAKEFAKE": 1, "sk-OTHEROTHEROTHER": 2})

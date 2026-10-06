@@ -24,5 +24,14 @@ original key with `key_inputs_redacted=true`.
 Redaction reduces accidental disclosure; it cannot prove that every secret is
 recognized. Review cassettes before committing them. `scrub(path, redactor)`
 reapplies current rules to an owned cassette and updates its digest. It cannot
-recover secrets already published elsewhere. The CLI scrub and privacy
-validation commands are added in later phases.
+recover secrets already published elsewhere. The CLI provides `scrub` and `validate --privacy` for these checks.
+
+Known patterns are scanned in object keys as well as string values. If redaction
+would collapse two distinct keys into one, recording fails rather than losing a
+field. Application hooks are still necessary for binary/encoded data and unknown
+secret formats. Privacy findings do not expose secret keys in diagnostic paths.
+
+Replay returns stored, redacted responses and tool results. Those can differ
+from the original live outputs. If sanitized values flow into later requests,
+configure matching ignore paths deliberately; the recorder cannot recover the
+redacted originals from disk. Tests explicitly replay sanitized HTTP/tool values.

@@ -22,6 +22,8 @@ jobs:
       # Start coverage before pytest11 imports the library, so import-time code is measured.
       - run: python -m coverage run -m pytest
       - run: python -m coverage report --fail-under=90
+      - run: python -m coverage json -o coverage.json
+      - run: python tools/coverage_gate.py coverage.json
   quality:
     runs-on: ubuntu-latest
     steps:

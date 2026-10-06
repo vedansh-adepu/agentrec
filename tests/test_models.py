@@ -1,4 +1,10 @@
-from agentrec.models import CASSETTE_SCHEMA_VERSION, CachedInteraction, RunRecord, Step, Usage
+from agentrec._legacy.models import (
+    CASSETTE_SCHEMA_VERSION,
+    CachedInteraction,
+    RunRecord,
+    Step,
+    Usage,
+)
 
 
 def test_run_record_serializes_to_json() -> None:

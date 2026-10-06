@@ -4,22 +4,25 @@ from __future__ import annotations
 
 import ast
 import operator
+from collections.abc import Callable
 from typing import Any
 
+from agentrec._legacy.tools.registry import ToolRegistry
 from agentrec.errors import AgentRecError
-from agentrec.tools.registry import ToolRegistry
 
 BinaryOperator = type[ast.Add | ast.Sub | ast.Mult | ast.Div]
 UnaryOperator = type[ast.UAdd | ast.USub]
 
-_BINARY_OPERATORS = {
+_BINARY_OPERATORS: dict[
+    type[ast.operator], Callable[[int | float, int | float], int | float]
+] = {
     ast.Add: operator.add,
     ast.Sub: operator.sub,
     ast.Mult: operator.mul,
     ast.Div: operator.truediv,
 }
 
-_UNARY_OPERATORS = {
+_UNARY_OPERATORS: dict[type[ast.unaryop], Callable[[int | float], int | float]] = {
     ast.UAdd: operator.pos,
     ast.USub: operator.neg,
 }
@@ -62,9 +65,9 @@ def _evaluate_node(node: ast.AST) -> int | float:
         return operator_func(_evaluate_node(node.left), _evaluate_node(node.right))
 
     if isinstance(node, ast.UnaryOp):
-        operator_func = _UNARY_OPERATORS.get(type(node.op))
-        if operator_func is None:
+        unary_func = _UNARY_OPERATORS.get(type(node.op))
+        if unary_func is None:
             raise ValueError("Unsupported unary operator")
-        return operator_func(_evaluate_node(node.operand))
+        return unary_func(_evaluate_node(node.operand))
 
     raise ValueError("Unsupported expression")

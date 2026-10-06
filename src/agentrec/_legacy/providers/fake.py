@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from agentrec.models import Usage
-from agentrec.providers.base import ModelRequest, ModelResponse
+from agentrec._legacy.models import Usage
+from agentrec._legacy.providers.base import ModelRequest, ModelResponse
 
 
 class FakeModelProvider:
@@ -26,7 +26,8 @@ class FakeModelProvider:
             usage=Usage(
                 input_tokens=self._count_input_tokens(request),
                 output_tokens=len(output_text.split()),
-                total_tokens=self._count_input_tokens(request) + len(output_text.split()),
+                total_tokens=self._count_input_tokens(request)
+                + len(output_text.split()),
                 cost_usd=0.0,
             ),
             raw={"provider": "fake"},
@@ -41,4 +42,6 @@ class FakeModelProvider:
         return ""
 
     def _count_input_tokens(self, request: ModelRequest) -> int:
-        return sum(len(message.get("content", "").split()) for message in request.messages)
+        return sum(
+            len(message.get("content", "").split()) for message in request.messages
+        )

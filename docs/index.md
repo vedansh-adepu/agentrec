@@ -13,16 +13,36 @@ import httpx2
 from openai import OpenAI
 import agentrec
 
-fake = httpx2.MockTransport(lambda request: httpx2.Response(200, json={
-    "id": "chatcmpl-example", "object": "chat.completion", "created": 1,
-    "model": "fake", "choices": [{"index": 0, "message": {
-        "role": "assistant", "content": "Use IGN-9"}, "finish_reason": "stop"}]}))
+fake = httpx2.MockTransport(
+    lambda request: httpx2.Response(
+        200,
+        json={
+            "id": "chatcmpl-example",
+            "object": "chat.completion",
+            "created": 1,
+            "model": "fake",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {"role": "assistant", "content": "Use IGN-9"},
+                    "finish_reason": "stop",
+                }
+            ],
+        },
+    )
+)
 with agentrec.session("quickstart", mode="once") as rec:
+
     @rec.tool
     def lookup_part(model: str) -> dict:
         return {"part": "IGN-9", "model": model}
-    with OpenAI(api_key="test", http_client=httpx2.Client(transport=rec.transport(fake))) as client:
-        answer = client.chat.completions.create(model="fake", messages=[{"role": "user", "content": "No heat"}])
+
+    with OpenAI(
+        api_key="test", http_client=httpx2.Client(transport=rec.transport(fake))
+    ) as client:
+        answer = client.chat.completions.create(
+            model="fake", messages=[{"role": "user", "content": "No heat"}]
+        )
         assert answer.choices[0].message.content == "Use IGN-9"
         assert lookup_part("F-100")["part"] == "IGN-9"
 ```

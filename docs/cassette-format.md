@@ -38,3 +38,16 @@ decodes arguments before recomputing their key. HTTP binary bodies use
 `body_encoding: base64`; HTTP text is UTF-8. Responses store decoded bytes
 and omit stale content-encoding and content-length headers. The HTTP client
 may generate a new content-length matching the decoded body.
+
+Streaming replay preserves decoded body bytes and parsed events, not original
+chunk sizes or timing. A midstream transport error is replayed as an error
+before any response chunks; partial output before the original error is not
+reproduced. Early closing a recorded stream drains it, which can block until the
+upstream ends or times out. Cancellation and process termination are not resumable
+recordings. Finish calls/streams before closing a session.
+
+Trajectory diff compares stored requests/outcomes, not final application state
+outside these boundaries. It aligns by seq for equal lengths and key/occurrence
+when lengths differ. Details show at most ten differing paths per field and
+truncate rendered values to 100 characters; the changed-step count still signals
+a difference. Metadata and timestamps are not behavioral changes.

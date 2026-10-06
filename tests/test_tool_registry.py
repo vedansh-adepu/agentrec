@@ -1,7 +1,7 @@
 import pytest
 
+from agentrec._legacy.tools import ToolRegistry, calculator_tool, default_tool_registry
 from agentrec.errors import AgentRecError
-from agentrec.tools import ToolRegistry, calculator_tool, default_tool_registry
 
 
 def test_tool_registry_can_register_and_call_tool() -> None:

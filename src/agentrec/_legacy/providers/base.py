@@ -6,7 +6,7 @@ from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from agentrec.models import Usage
+from agentrec._legacy.models import Usage
 
 
 class ModelRequest(BaseModel):
