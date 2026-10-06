@@ -31,7 +31,7 @@ test = [
   "pytest-socket>=0.7",
   "httpx2>=2.13",
   "openai>=3",
-  "anthropic>=1",
+  "anthropic>=1.11.0",
   "httpx>=0.27",
 ]
 
