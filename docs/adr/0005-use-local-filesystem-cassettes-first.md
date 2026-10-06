@@ -1,9 +1,12 @@
 # ADR-0005: Use Local Filesystem Cassettes First
 
+Status: Superseded by ADR 0016
+
+Local filesystem storage remains; schema v2 replaces the file layout listed below.
+
 Historical 0.x decision; review the 1.x ADRs (0011–0016) for current guarantees.
 
 
-- Status: Accepted
 - Context:
   - Cassettes should be easy to inspect, diff, and test.
   - Remote storage or databases would add complexity before the MVP needs them.
