@@ -91,5 +91,13 @@ and `validate --privacy`, and prints both JSON results. Response redaction can
 change returned values and make the parsed equality assertion fail; inspect
 such a failure locally. Errors print their type, not SDK request details.
 
-The live script has not been run here. Unit tests exercise parsing and output
-containment using fake keys and temporary paths.
+Live smoke verified against OpenAI gpt-4.1-nano (streaming + non-streaming) on 2026-10-06; Anthropic not yet verified
+
+The manual run recorded two upstream calls (one streaming, one non-streaming),
+then replayed identical parsed SDK results with zero upstream calls. Both
+`validate --level replayable` and `validate --privacy` passed; a count-only scan
+of all new cassette files found zero `sk-` occurrences. The key was read inline
+from macOS Keychain, never printed or committed, and all temporary cassettes were
+removed after inspection. This verifies this model/run, not all provider versions
+or streaming timing. Offline tests continue to use synthetic inputs and fake
+upstreams; no live-provider check is added to CI.
