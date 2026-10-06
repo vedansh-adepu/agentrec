@@ -12,6 +12,8 @@ after publication.
 
 ## Why I built it
 
+At work I own release evaluation for clinical models, and the failures that hurt most were the ones I couldn't reproduce.
+
 Agent failures are hard to reproduce: the same request can return different
 answers, tools can be flaky, and a bug you cannot replay is hard to fix. I
 wanted each failure to become a deterministic test fixture. agentrec records
@@ -171,18 +173,14 @@ diffs through HTTPX2-native transports.
 
 ## Limitations
 
-This branch has not been published to PyPI. The v0 prototype package and its
-prototype-only tests were removed; see [migration](docs/migration.md) for Git
-history. Current tests use fake upstreams, not live OpenAI or Anthropic API
-calls. Redaction cannot prove all sensitive content is absent. The format digest
-is not an authenticity signature. Canonicalization mutation score is 80.51%
-raw, below the 85% target, or 85.11% excluding 15 individually documented
-equivalent mutants. The remaining survivors change diagnostic text only.
-The remote CI matrix and live-provider streaming have not been verified.
-Bodies, including streams, are buffered in memory. Streaming replay does not
-preserve chunk timing or partial chunks delivered before a recorded stream
-error. Older SDKs may wrap replay errors; inspect `__cause__`. See
-[test quality](docs/test-quality.md) and [performance](docs/performance.md).
+- Not yet published to PyPI.
+- Tests use fake upstreams; remote CI and live-provider streaming verification are pending.
+- Redaction cannot prove all sensitive content is absent.
+- The format digest is not an authenticity signature.
+- Bodies, including streams, are buffered in memory; see [performance](docs/performance.md).
+- Streaming replay preserves neither chunk timing nor partial chunks delivered before a recorded stream error.
+- Older SDKs may wrap replay errors; inspect `__cause__`.
+- Test quality and known gaps: see [docs/test-quality.md](docs/test-quality.md).
 
 ## Roadmap
 

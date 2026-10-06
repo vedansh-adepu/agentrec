@@ -24,7 +24,10 @@ zero timeouts, suspicious outcomes, or untested mutants. Baseline classification
 All three baseline class-a mutants are killed after the focused tests. The final
 54 survivors consist of 15 equivalents and 39 diagnostic-only changes.
 
-The raw 85% target is not met. Killing every remaining survivor would require
+Canonicalization mutation score is 80.51% raw, below the 85% target, or 85.11%
+excluding 15 individually documented equivalent mutants. The remaining survivors
+change diagnostic text only or are equivalent. Killing every remaining survivor
+would require
 asserting diagnostic spelling or distinguishing equivalent operations. We do not
 write those tests merely to improve the score. The five additional text-only
 survivors come from necessary guards for non-string storage keys and serializer
