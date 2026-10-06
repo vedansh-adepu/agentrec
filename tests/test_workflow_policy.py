@@ -21,3 +21,9 @@ def test_publishing_requires_opt_in_and_pages_only_follows_main() -> None:
     assert "attestations: true" in release and "id-token: write" in release
     pages = (ROOT / ".github/workflows/pages.yml").read_text(encoding="utf-8")
     assert "branches: [main]" in pages and "pull_request:" not in pages
+
+
+def test_codeql_scans_pre_release_branch_before_pr() -> None:
+    codeql = (ROOT / ".github/workflows/codeql.yml").read_text(encoding="utf-8")
+    assert "  push:\n    branches: [main, v1-production]" in codeql
+    assert "  pull_request:\n    branches: [main]" in codeql
