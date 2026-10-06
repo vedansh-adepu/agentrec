@@ -1,9 +1,12 @@
 # ADR-0010: Version Local Cassette Metadata
 
+Status: Superseded by ADR 0016
+
+Schema v2 replaces the RunRecord/schema-v1 metadata contract below.
+
 Historical 0.x decision; review the 1.x ADRs (0011–0016) for current guarantees.
 
 
-- Status: Accepted
 - Context:
   - Cassettes are persisted developer artifacts.
   - Replay, diff, show, and validate need a clear way to reject unsupported cassette shapes.

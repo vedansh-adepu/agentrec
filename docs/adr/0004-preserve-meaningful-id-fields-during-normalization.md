@@ -1,9 +1,12 @@
 # ADR-0004: Preserve Meaningful `id` Fields During Normalization
 
+Status: Superseded by ADR 0012
+
+The v1 policy preserves all body fields by default and requires explicit ignore paths.
+
 Historical 0.x decision; review the 1.x ADRs (0011–0016) for current guarantees.
 
 
-- Status: Accepted
 - Context:
   - A generic `id` field can be meaningful in tool arguments, such as `{"id": "customer_123"}`.
   - Removing all `id` keys could make different tool requests hash to the same value.

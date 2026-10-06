@@ -38,13 +38,13 @@ nav:
       - Redaction: adr/0015-redaction-before-persist.md
       - Schema: adr/0016-schema-v2.md
   - Historical decisions:
-      - 0001: adr/0001-build-a-local-deterministic-record-replay-cli-not-a-dashboard.md
-      - 0002: adr/0002-start-with-fake-offline-provider-before-live-openai-anthropic-providers.md
-      - 0003: adr/0003-use-content-addressed-request-hashes-for-replay-lookup.md
-      - 0004: adr/0004-preserve-meaningful-id-fields-during-normalization.md
-      - 0005: adr/0005-use-local-filesystem-cassettes-first.md
-      - 0006: adr/0006-keep-replay-hermetic-cache-misses-must-fail-loudly.md
-      - 0007: adr/0007-use-safe-ast-parsing-for-calculator-instead-of-eval.md
-      - 0008: adr/0008-work-one-step-at-a-time-and-inspect-before-moving-forward.md
-      - 0009: adr/0009-treat-production-level-as-strong-guarantees-tests-docs-and-safety-not-feature-bl.md
-      - 0010: adr/0010-version-local-cassette-metadata.md
+      - "0001 Local CLI, not a dashboard": adr/0001-build-a-local-deterministic-record-replay-cli-not-a-dashboard.md
+      - "0002 Offline provider before live integrations": adr/0002-start-with-fake-offline-provider-before-live-openai-anthropic-providers.md
+      - "0003 Content-addressed replay lookup": adr/0003-use-content-addressed-request-hashes-for-replay-lookup.md
+      - "0004 Meaningful IDs and implicit normalization": adr/0004-preserve-meaningful-id-fields-during-normalization.md
+      - "0005 Local filesystem cassettes": adr/0005-use-local-filesystem-cassettes-first.md
+      - "0006 Hermetic replay and explicit misses": adr/0006-keep-replay-hermetic-cache-misses-must-fail-loudly.md
+      - "0007 Safe calculator AST (retired)": adr/0007-use-safe-ast-parsing-for-calculator-instead-of-eval.md
+      - "0008 Incremental development and review": adr/0008-work-one-step-at-a-time-and-inspect-before-moving-forward.md
+      - "0009 Production quality without feature bloat": adr/0009-treat-production-level-as-strong-guarantees-tests-docs-and-safety-not-feature-bl.md
+      - "0010 Versioned cassette metadata": adr/0010-version-local-cassette-metadata.md
