@@ -51,3 +51,8 @@ outside these boundaries. It aligns by seq for equal lengths and key/occurrence
 when lengths differ. Details show at most ten differing paths per field and
 truncate rendered values to 100 characters; the changed-step count still signals
 a difference. Metadata and timestamps are not behavioral changes.
+
+Tool-result dictionaries in new recordings preserve insertion order, including
+nested dictionaries. Matching remains canonical and insensitive to object key order.
+This uses ordinary schema-v2 JSON objects, with no new fields or tags. Existing v2
+cassettes load unchanged; recordings made before rc2 cannot recover discarded order.

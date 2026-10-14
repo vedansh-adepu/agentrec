@@ -12,11 +12,15 @@ from agentrec.errors import (
     ReplayOrderError,
     UnplayedInteractionsError,
 )
+from agentrec.redaction import Redactor
 
 from .model import Interaction
 
 
-def _summary(request: dict[str, Any]) -> str:
+def _summary(request: dict[str, Any], redactor: Redactor | None = None) -> str:
+    request = (redactor or Redactor()).redact_request(
+        request, kind="http" if "method" in request else "tool"
+    )
     if "method" in request:
         return f"{request.get('method')} {request.get('url')}"
     if "name" in request:
@@ -56,8 +60,10 @@ class ReplayIndex:
         *,
         strict_order: bool = False,
         allow_playback_repeats: bool = False,
+        redactor: Redactor | None = None,
     ) -> None:
         """Index a contiguous recording and reject inconsistent occurrences."""
+        self.redactor = redactor or Redactor()
         self.interactions = list(interactions)
         self.strict_order = strict_order
         self.allow_playback_repeats = allow_playback_repeats
@@ -99,12 +105,12 @@ class ReplayIndex:
             raise UnplayedInteractionsError(f"unplayed interactions at seq: {numbers}")
 
     def _miss_message(self, request: dict[str, Any]) -> str:
-        summary = _summary(request)
+        summary = _summary(request, self.redactor)
         candidates = [
             item
             for item in self.interactions
             if item.kind == ("http" if "method" in request else "tool")
-            and _summary(item.request) == summary
+            and _summary(item.request, self.redactor) == summary
         ][:3]
         if not candidates:
             return f"replay miss for {summary}; no similar recorded request"
@@ -124,7 +130,7 @@ class ReplayIndex:
         if offset >= len(queue):
             if not self.allow_playback_repeats:
                 raise ReplayExhaustedError(
-                    f"replay exhausted for {_summary(request)} "
+                    f"replay exhausted for {_summary(request, self.redactor)} "
                     f"after {len(queue)} occurrences"
                 )
             offset = 0

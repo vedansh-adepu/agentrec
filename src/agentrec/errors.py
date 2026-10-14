@@ -8,7 +8,9 @@ class AgentRecError(Exception):
     hint = "Check the input and the documented operation guarantees."
 
     def __init__(self, message: str) -> None:
-        self.message = " ".join(message.splitlines())
+        from .redaction import Redactor
+
+        self.message = Redactor().redact_text(" ".join(message.splitlines()))
         super().__init__(self.message)
 
     def __str__(self) -> str:
@@ -81,3 +83,10 @@ class ReplayedTransportError(AgentRecError):
 
     code = "AR106"
     hint = "Inspect the recorded error or re-record with a supported transport."
+
+
+class ToolIdentityError(AgentRecError):
+    """Reject an ambiguous or unnamed callable before execution."""
+
+    code = "AR107"
+    hint = "Pass name= with a unique stable tool name."

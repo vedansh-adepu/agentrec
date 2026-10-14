@@ -2,7 +2,17 @@
 
 All notable changes follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [1.0.0rc1] - Unreleased
+## [1.0.0rc2] - Unreleased
+
+- Redact diagnostic request summaries and validation/CLI errors; unsupported schema
+  versions report their type without echoing the value.
+- Add optional tool `name=` and `ToolIdentityError` for ambiguous registrations;
+  lambda tools require explicit names. Existing unique-name matching keys remain stable.
+- Preserve nested tool-result dictionary insertion order in schema-v2 recordings,
+  including scrub rewrites, so subsequent SDK requests using `json.dumps` replay.
+  Existing schema-v2 cassettes remain readable; previously lost order cannot be recovered.
+
+## [1.0.0rc1] - Previous unreleased candidate
 
 ### Changed
 

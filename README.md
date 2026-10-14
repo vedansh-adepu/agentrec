@@ -33,7 +33,7 @@ pip install -e ".[test]"
 ```
 
 `httpx2` is installed with the test extra; the optional legacy adapter is
-`agentrec[httpx]`. The current branch is development work toward 1.0.0rc1,
+`agentrec[httpx]`. The current branch is development work toward 1.0.0rc2,
 not a published release.
 
 ## Quickstart
@@ -124,6 +124,12 @@ order and does not run the `create_work_order` body.
 
 `AGENTREC_MODE` overrides a session's unspecified mode. The pytest fixture
 uses `none` by default in CI and `once` locally.
+
+Tool names default to the function name. Use `@rec.tool(name="inventory.lookup")`
+when registering different callables with the same name; lambdas require `name=`.
+Ambiguous registrations raise `ToolIdentityError` before either tool executes.
+Tool-result dictionaries retain insertion order in new recordings; old cassettes
+remain readable but cannot recover order that was already lost.
 
 ## Matching
 

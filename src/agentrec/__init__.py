@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import httpx
 
-__version__ = "1.0.0rc1"
+__version__ = "1.0.0rc2"
 
 
 from .errors import (
@@ -17,6 +17,7 @@ from .errors import (
     ReplayExhaustedError,
     ReplayMissError,
     ReplayOrderError,
+    ToolIdentityError,
     UnplayedInteractionsError,
 )
 from .matching import MatchPolicy
@@ -35,6 +36,7 @@ __all__ = [
     "ReplayedToolError",
     "ReplayedTransportError",
     "Session",
+    "ToolIdentityError",
     "UnplayedInteractionsError",
     "__version__",
     "legacy_async_httpx_transport",

@@ -5,7 +5,6 @@ from __future__ import annotations
 import base64
 import copy
 import hashlib
-import json
 import logging
 import threading
 from collections import defaultdict
@@ -13,11 +12,12 @@ from collections.abc import Callable
 from contextlib import AbstractContextManager
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, ParamSpec, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Literal, ParamSpec, TypeVar, cast, overload
 
 from .canonical import decode_special_values, encode_special_values
 from .cassette.model import CassetteMetadata, ErrorRecord, Interaction, PolicyRecord
 from .cassette.replay import ReplayIndex
+from .cassette.serialization import interaction_bytes
 from .cassette.store import CassetteOwnershipError, CassetteStore, CassetteStoreError
 from .errors import ReplayExhaustedError, ReplayMissError, ReplayOrderError
 from .matching import MatchPolicy
@@ -61,6 +61,7 @@ class Session:
             raise ValueError("max_body_bytes must be positive")
         self.max_body_bytes = max_body_bytes
         self._lock = threading.RLock()
+        self._tool_identities: dict[str, tuple[str, str]] = {}
         self._started = datetime.now(UTC)
         self._closed = False
         self._new: list[Interaction] = []
@@ -133,6 +134,7 @@ class Session:
                 interactions,
                 strict_order=strict_order,
                 allow_playback_repeats=allow_playback_repeats,
+                redactor=self.redactor,
             )
             for item in interactions:
                 self._occurrences[item.key] += 1
@@ -259,11 +261,27 @@ class Session:
 
         return AsyncRecordReplayTransport(self, inner=inner)
 
-    def tool(self, function: Callable[P, R]) -> Callable[P, R]:
-        """Snapshot arguments and replay outcomes without executing the tool body."""
+    @overload
+    def tool(
+        self, function: Callable[P, R], *, name: str | None = None
+    ) -> Callable[P, R]: ...
+
+    @overload
+    def tool(self, *, name: str) -> Callable[[Callable[P, R]], Callable[P, R]]: ...
+
+    def tool(
+        self, function: Callable[P, R] | None = None, *, name: str | None = None
+    ) -> Callable[P, R] | Callable[[Callable[P, R]], Callable[P, R]]:
+        """Record a tool under its existing name or an explicit stable name."""
         from .tools import decorate_tool
 
-        return decorate_tool(self, function)
+        if function is not None:
+            return decorate_tool(self, function, name=name)
+
+        def decorator(target: Callable[P, R]) -> Callable[P, R]:
+            return decorate_tool(self, target, name=name)
+
+        return decorator
 
     def close(self, error: BaseException | None = None) -> None:
         """Finalize once, release the writer lease, and enforce replay accounting."""
@@ -281,16 +299,7 @@ class Session:
         if self._recording_allowed():
             interactions = self._existing + self._new
             if self._new or self._metadata is None:
-                data = b"".join(
-                    json.dumps(
-                        item.model_dump(mode="json"),
-                        sort_keys=True,
-                        separators=(",", ":"),
-                        allow_nan=False,
-                    ).encode()
-                    + b"\n"
-                    for item in interactions
-                )
+                data = b"".join(interaction_bytes(item) for item in interactions)
                 from . import __version__
 
                 metadata = CassetteMetadata(
