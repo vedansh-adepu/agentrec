@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import math
 import re
 from collections.abc import Callable, Mapping
@@ -13,6 +12,7 @@ from typing import Any, cast
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from .cassette.model import CassetteMetadata, ErrorRecord, Interaction
+from .cassette.serialization import interaction_bytes
 from .cassette.store import CassetteStore
 
 REDACTION_POLICY_VERSION = 2
@@ -244,16 +244,7 @@ def scrub(path: str | Path, redactor: Redactor | None = None) -> int:
                 }
             )
         )
-    data = b"".join(
-        json.dumps(
-            item.model_dump(mode="json"),
-            sort_keys=True,
-            separators=(",", ":"),
-            allow_nan=False,
-        ).encode()
-        + b"\n"
-        for item in updated
-    )
+    data = b"".join(interaction_bytes(item) for item in updated)
     metadata_error = (
         ErrorRecord(
             type=metadata.error.type,

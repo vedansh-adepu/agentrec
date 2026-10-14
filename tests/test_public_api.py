@@ -15,6 +15,7 @@ def test_public_api_surface_is_explicit_and_stable() -> None:
         "ReplayedToolError",
         "ReplayedTransportError",
         "Session",
+        "ToolIdentityError",
         "UnplayedInteractionsError",
         "__version__",
         "legacy_async_httpx_transport",

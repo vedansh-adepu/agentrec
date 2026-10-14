@@ -13,19 +13,22 @@ from .cassette.replay import ReplayIndex
 from .cassette.store import CassetteStore
 from .diff import diff_v2_cassettes
 from .matching import MatchPolicy
+from .redaction import Redactor
 from .redaction import scrub as scrub_cassette
 from .validation import ValidationLevel, validate_v2_cassette
 
 app = typer.Typer(
     help="Inspect and validate deterministic AI-agent cassettes.",
     invoke_without_command=True,
+    pretty_exceptions_show_locals=False,
 )
 
 
 def _fail(ctx: typer.Context, exc: Exception, *, code: int) -> None:
+    message = Redactor().redact_text(str(exc))
     if ctx.obj and ctx.obj.get("debug"):
-        raise exc
-    typer.echo(f"error: {str(exc).splitlines()[0]}", err=True)
+        raise ValueError(message).with_traceback(exc.__traceback__) from None
+    typer.echo(f"error: {message.splitlines()[0]}", err=True)
     raise typer.Exit(code=code) from exc
 
 

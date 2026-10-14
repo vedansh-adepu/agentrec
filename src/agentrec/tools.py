@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar, cast
 
 from .canonical import decode_special_values
 from .cassette.model import ErrorRecord
-from .errors import ReplayedToolError, ReplayMissError
+from .errors import ReplayedToolError, ReplayMissError, ToolIdentityError
 
 if TYPE_CHECKING:
     from .session import Session
@@ -21,8 +21,21 @@ P = ParamSpec("P")
 R = TypeVar("R")
 
 
-def decorate_tool(session: Session, function: Callable[P, R]) -> Callable[P, R]:
+def decorate_tool(
+    session: Session, function: Callable[P, R], *, name: str | None = None
+) -> Callable[P, R]:
     """Wrap a sync or async tool with pre-execution arguments and replay."""
+    tool_name = function.__name__ if name is None else name
+    if not tool_name or not tool_name.strip():
+        raise ToolIdentityError("tool name must be nonempty; pass name=")
+    if function.__name__ == "<lambda>" and name is None:
+        raise ToolIdentityError("lambda tools require an explicit name=")
+    identity = (function.__module__, function.__qualname__)
+    with session._lock:
+        previous = session._tool_identities.get(tool_name)
+        if previous is not None and previous != identity:
+            raise ToolIdentityError("different callables share a tool name; pass name=")
+        session._tool_identities[tool_name] = identity
     signature = inspect.signature(function)
 
     def arguments(args: tuple[Any, ...], kwargs: dict[str, Any]) -> dict[str, Any]:
@@ -35,8 +48,8 @@ def decorate_tool(session: Session, function: Callable[P, R]) -> Callable[P, R]:
         @wraps(function)
         async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
             snapshot = arguments(args, kwargs)
-            request = {"name": function.__name__, "arguments": snapshot}
-            key = session.match_policy.tool_key(function.__name__, snapshot)
+            request = {"name": tool_name, "arguments": snapshot}
+            key = session.match_policy.tool_key(tool_name, snapshot)
             played = session._lookup(key, request)
             if played is not None:
                 if played.error:
@@ -45,7 +58,7 @@ def decorate_tool(session: Session, function: Callable[P, R]) -> Callable[P, R]:
                     raise ReplayMissError("recorded tool interaction has no result")
                 return copy.deepcopy(decode_special_values(played.response["result"]))
             if not session._recording_allowed():
-                raise ReplayMissError(f"tool replay miss: {function.__name__}")
+                raise ReplayMissError(f"tool replay miss: {tool_name}")
             started = datetime.now(UTC)
             tick = time.perf_counter()
             try:
@@ -77,8 +90,8 @@ def decorate_tool(session: Session, function: Callable[P, R]) -> Callable[P, R]:
     @wraps(function)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
         snapshot = arguments(args, kwargs)
-        request = {"name": function.__name__, "arguments": snapshot}
-        key = session.match_policy.tool_key(function.__name__, snapshot)
+        request = {"name": tool_name, "arguments": snapshot}
+        key = session.match_policy.tool_key(tool_name, snapshot)
         played = session._lookup(key, request)
         if played is not None:
             if played.error:
@@ -87,7 +100,7 @@ def decorate_tool(session: Session, function: Callable[P, R]) -> Callable[P, R]:
                 raise ReplayMissError("recorded tool interaction has no result")
             return copy.deepcopy(decode_special_values(played.response["result"]))
         if not session._recording_allowed():
-            raise ReplayMissError(f"tool replay miss: {function.__name__}")
+            raise ReplayMissError(f"tool replay miss: {tool_name}")
         started = datetime.now(UTC)
         tick = time.perf_counter()
         try:

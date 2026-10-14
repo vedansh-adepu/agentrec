@@ -13,7 +13,7 @@ from agentrec.cassette.model import CassetteMetadata, Interaction
 from agentrec.cassette.replay import ReplayIndex
 from agentrec.cassette.store import CassetteStore as V2CassetteStore
 from agentrec.matching import MatchPolicy, MatchPolicyError
-from agentrec.redaction import privacy_findings
+from agentrec.redaction import Redactor, privacy_findings
 
 
 class ValidationLevel(StrEnum):
@@ -79,11 +79,11 @@ def validate_v2_cassette(
         if [item.seq for item in interactions] != list(range(count)):
             errors.append("interaction seq values must be contiguous from 0")
     except Exception as exc:
-        errors.append(f"structural: {exc}")
+        errors.append(Redactor().redact_text(f"structural: {exc}"))
         return {
             "ok": False,
             "level": requested.value,
-            "run_path": str(path),
+            "run_path": Redactor().redact_text(str(path)),
             "interaction_count": count,
             "unverifiable_key_count": unverifiable,
             "warnings": warnings,
@@ -106,7 +106,11 @@ def validate_v2_cassette(
                 try:
                     computed = _stored_key(policy, item)
                 except (KeyError, TypeError, ValueError) as exc:
-                    errors.append(f"seq {item.seq} invalid stored request: {exc}")
+                    errors.append(
+                        Redactor().redact_text(
+                            f"seq {item.seq} invalid stored request: {exc}"
+                        )
+                    )
                     continue
                 if computed != item.key:
                     errors.append(f"seq {item.seq} key does not match stored request")
@@ -115,7 +119,7 @@ def validate_v2_cassette(
                     f"{unverifiable} key(s) cannot be recomputed from redacted input"
                 )
         except Exception as exc:
-            errors.append(f"integrity: {exc}")
+            errors.append(Redactor().redact_text(f"integrity: {exc}"))
 
     if requested in {ValidationLevel.REPLAYABLE, ValidationLevel.PRIVACY}:
         if metadata.status != "complete" and not (
@@ -132,7 +136,7 @@ def validate_v2_cassette(
     return {
         "ok": not errors,
         "level": requested.value,
-        "run_path": str(path),
+        "run_path": Redactor().redact_text(str(path)),
         "interaction_count": count,
         "unverifiable_key_count": unverifiable,
         "warnings": warnings,

@@ -20,6 +20,7 @@ from .model import (
     CassetteMetadata,
     Interaction,
 )
+from .serialization import interaction_bytes
 
 KEY_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
@@ -170,16 +171,7 @@ class CassetteStore:
             raise CassetteStoreError("metadata interaction count does not match")
         if [item.seq for item in interactions] != list(range(len(interactions))):
             raise CassetteStoreError("interaction sequence must be contiguous")
-        data = b"".join(
-            json.dumps(
-                item.model_dump(mode="json"),
-                sort_keys=True,
-                separators=(",", ":"),
-                allow_nan=False,
-            ).encode("utf-8")
-            + b"\n"
-            for item in interactions
-        )
+        data = b"".join(interaction_bytes(item) for item in interactions)
         digest = hashlib.sha256(data).hexdigest()
         if metadata.content_sha256 != digest:
             raise CassetteStoreError(
@@ -240,7 +232,7 @@ class CassetteStore:
                     "re-record (see docs/migration.md)"
                 )
             raise CassetteVersionError(
-                f"unsupported cassette schema version: {version!r}"
+                f"unsupported cassette schema version (type {type(version).__name__})"
             )
         try:
             metadata = CassetteMetadata.model_validate_json(metadata_bytes)

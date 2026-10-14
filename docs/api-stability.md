@@ -8,7 +8,7 @@ The prototype API and its former import paths are removed. Historical source
 and tests remain in Git; see [migration](migration.md).
 
 Public names: AgentRecError, MatchPolicy, RecordMode, Redactor, ReplayExhaustedError,
-ReplayMissError, ReplayOrderError, ReplayedToolError, ReplayedTransportError, Session,
+ReplayMissError, ReplayOrderError, ReplayedToolError, ReplayedTransportError, Session, ToolIdentityError,
 UnplayedInteractionsError, __version__, legacy_async_httpx_transport,
 legacy_httpx_transport, session.
 

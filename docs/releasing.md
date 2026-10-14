@@ -13,7 +13,7 @@ Enable GitHub Pages using GitHub Actions before the Pages workflow is used.
 
 After the required-reviewer environment is configured, publishing waits for its
 approval. The repository-variable guard is also required. The workflow uses OIDC
-Trusted Publishing and requests attestations. Tagging v1.0.0rc1 triggers the
+Trusted Publishing and requests attestations. Tagging v1.0.0rc2 triggers the
 workflow, so finish setup and require environment approval BEFORE creating/pushing
 that tag. Do not treat a tag as a harmless preview. For a local dry-run, build a
 wheel/sdist and install the wheel into a temporary venv without publishing.

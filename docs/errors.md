@@ -2,7 +2,8 @@
 
 Library errors expose `code`, `message`, and `hint`. Their string form has a
 single message line followed by a `hint:` line. The CLI prints the first line
-and uses `--debug` to preserve the traceback. Codes are stable across 1.x.
+and uses `--debug` for a traceback with a sanitized message and no locals.
+Codes are stable across 1.x.
 
 | Code | Exception |
 | --- | --- |
@@ -16,6 +17,7 @@ and uses `--debug` to preserve the traceback. Codes are stable across 1.x.
 | AR104 | UnplayedInteractionsError |
 | AR105 | ReplayedToolError |
 | AR106 | ReplayedTransportError |
+| AR107 | ToolIdentityError |
 | AR203 | CassetteStoreError |
 | AR204 | CassetteVersionError |
 | AR205 | CassetteOwnershipError |
